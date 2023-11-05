@@ -21,6 +21,11 @@ use winit_input_helper::WinitInputHelper;
 const DEFAULT_FONT_DIR: &str = "/etc/tid/fonts";
 const DEFAULT_FONT: &str = "cream12.uf2";
 
+const PIXEL_SIZE: usize = 4;
+type Pixel = [u8; PIXEL_SIZE];
+const BACKGROUND: Pixel = [0x00; PIXEL_SIZE];
+const FOREGROUND: Pixel = [0xff; PIXEL_SIZE];
+
 fn report_time(t: std::time::Instant, msg: &str) {
     let ms = t.elapsed().as_secs_f32() * 1000.0;
     eprintln!("{ms:>9.5} ms: {msg}");
@@ -69,7 +74,6 @@ fn main() -> Result<(), pixels::Error> {
         .build(&event_loop)
         .unwrap();
 
-    const PIXEL_SIZE: usize = 4;
     let mut pixels = {
         let window_size = window.inner_size();
         let surface_texture = SurfaceTexture::new(window_size.width, window_size.height, &window);
@@ -122,9 +126,9 @@ fn main() -> Result<(), pixels::Error> {
                         for (xg, &cell) in row.iter().enumerate() {
                             let x = x0 + xg;
                             let px = if cell {
-                                [0xff; PIXEL_SIZE]
+                                FOREGROUND
                             } else {
-                                [0x00; PIXEL_SIZE]
+                                BACKGROUND
                             };
                             let idx = (y * width as usize + x) * PIXEL_SIZE;
                             pixels.frame_mut()[idx..idx + PIXEL_SIZE].copy_from_slice(&px);
@@ -140,9 +144,9 @@ fn main() -> Result<(), pixels::Error> {
                 let blank = height as usize - ((usage / 100.0) * height as f32) as usize;
                 for y in 0..height as usize {
                     let px = if y < blank {
-                        [0x00; PIXEL_SIZE]
+                        BACKGROUND
                     } else {
-                        [0xff; PIXEL_SIZE]
+                        FOREGROUND
                     };
                     let idx = (y * width as usize + x0) * PIXEL_SIZE;
                     pixels.frame_mut()[idx..idx + PIXEL_SIZE].copy_from_slice(&px);
