@@ -1,4 +1,4 @@
-# _tid_ --- a small system information bar
+# _tid_ &mdash; a small system information bar
 
 This little program is _very_ under construction. 
 It is intended for my personal use, so it is not polished to suit usability for others, at this moment.
