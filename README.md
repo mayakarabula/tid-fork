@@ -5,7 +5,9 @@
 This little program is _very_ under construction. 
 It is intended for my personal use, so it is not polished to suit usability for others, at this moment.
 This may change, at some point.
-But right now, it is not there yet.
+But right now, it works for me and it makes me happy.
+
+(See also, accompanying [labbook entry](https://dwangschematiek.nl/labbook/tid/).)
 
 ## installation
 
