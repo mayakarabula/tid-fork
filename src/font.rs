@@ -133,6 +133,13 @@ impl Font {
     pub(crate) const fn height(&self) -> usize {
         TILES / 2 * TILE_ROWS
     }
+
+    pub(crate) fn determine_width(&self, s: &str) -> usize {
+        s.chars()
+            .flat_map(|ch| self.glyph(ch))
+            .map(|g| g.width)
+            .sum()
+    }
 }
 
 impl Font {

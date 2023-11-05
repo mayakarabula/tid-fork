@@ -1,4 +1,4 @@
-#![feature(array_chunks, iter_array_chunks)]
+#![feature(array_chunks, iter_array_chunks, slice_flatten)]
 
 mod font;
 
@@ -9,7 +9,7 @@ use std::path::Path;
 use font::Font;
 
 use chrono::Timelike;
-use pixels::{PixelsBuilder, SurfaceTexture};
+use pixels::{Pixels, PixelsBuilder, SurfaceTexture};
 use sysinfo::{CpuExt, System, SystemExt};
 use winit::dpi::{LogicalPosition, LogicalSize};
 use winit::event::Event;
@@ -25,6 +25,54 @@ const PIXEL_SIZE: usize = 4;
 type Pixel = [u8; PIXEL_SIZE];
 const BACKGROUND: Pixel = [0x00; PIXEL_SIZE];
 const FOREGROUND: Pixel = [0xff; PIXEL_SIZE];
+
+#[derive(Debug, Clone)]
+struct Block {
+    height: usize,
+    pixels: Vec<Pixel>,
+}
+
+impl Block {
+    fn rows(&self) -> std::slice::ChunksExact<'_, Pixel> {
+        let width = self.pixels.len() / self.height;
+        self.pixels.chunks_exact(width)
+    }
+
+    fn draw_onto_pixels(self, pixels: &mut Pixels, start_x: usize) {
+        let size = pixels.texture().size();
+        for (y, row) in self.rows().enumerate() {
+            let idx = (y * size.width as usize + start_x) * PIXEL_SIZE;
+            let row_bytes = row.flatten();
+            pixels.frame_mut()[idx..idx + row_bytes.len()].copy_from_slice(row_bytes);
+        }
+    }
+}
+
+trait Draw {
+    fn draw(&self, font: &Font) -> Block;
+}
+
+impl Draw for String {
+    fn draw(&self, font: &Font) -> Block {
+        let height = font.height();
+        let glyphs = self.chars().flat_map(|ch| font.glyph(ch));
+        let width: usize = glyphs.clone().map(|g| g.width).sum();
+        let mut pixels = vec![BACKGROUND; height * width];
+        let mut x0 = 0;
+        for g in glyphs {
+            for (y, row) in g.rows().enumerate() {
+                for (xg, &cell) in row.iter().enumerate() {
+                    let x = x0 + xg;
+                    let idx = y * width + x;
+                    pixels[idx] = if cell { FOREGROUND } else { BACKGROUND };
+                }
+            }
+            x0 += g.width;
+        }
+
+        Block { height, pixels }
+    }
+}
 
 fn report_time(t: std::time::Instant, msg: &str) {
     let ms = t.elapsed().as_secs_f32() * 1000.0;
@@ -42,20 +90,30 @@ fn load_font<P: AsRef<Path>>(path: P) -> Font {
 }
 
 fn main() -> Result<(), pixels::Error> {
-    let cpu_graph_width = 100;
+    let cpu_graph_width = 120;
     let mut sys = System::new();
     let mut cpu_hist = VecDeque::with_capacity(cpu_graph_width);
 
     let font_path = std::path::PathBuf::from_iter([DEFAULT_FONT_DIR, DEFAULT_FONT]);
     let font = { load_font(font_path) };
+
+    let padding_left = 3;
+    let space = font.determine_width("  ");
+    let clock_width = font.determine_width("00:00:00");
+    let cpu_width = font.determine_width("c100%");
+    let mem_width = font.determine_width("m100%");
+
     let set_size_by_font = |font: &Font| {
-        let mut width = 0;
-        for ch in "00:00:00  m100%  c100%  ".chars() {
-            width += font.glyph(ch).unwrap().width as u32;
-        }
-        width += cpu_graph_width as u32;
-        let height = font.height() as u32;
-        (width, height)
+        let width = padding_left
+            + clock_width
+            + space
+            + mem_width
+            + space
+            + cpu_width
+            + space
+            + cpu_graph_width;
+        let height = font.height();
+        (width as u32, height as u32)
     };
     let (width, height) = set_size_by_font(&font);
 
@@ -86,80 +144,68 @@ fn main() -> Result<(), pixels::Error> {
     event_loop.run(move |event, _, control_flow| {
         control_flow.set_wait_timeout(std::time::Duration::from_millis(500));
 
-        if let Event::NewEvents(winit::event::StartCause::ResumeTimeReached { .. }) = event {
-            window.request_redraw()
-        }
+        match event {
+            Event::NewEvents(winit::event::StartCause::ResumeTimeReached { .. }) => {
+                window.request_redraw()
+            }
+            Event::RedrawRequested(_) => {
+                // Clear the screen before drawing.
+                pixels.frame_mut().fill(0x00);
 
-        if let Event::RedrawRequested(_) = event {
-            // Clear the screen before drawing.
-            pixels.frame_mut().fill(0x00);
+                // Get the info.
+                let time = chrono::Local::now();
+                let clock = format!(
+                    "{:02}:{:02}:{:02}",
+                    time.hour(),
+                    time.minute(),
+                    time.second()
+                );
+                let cpu_avg = {
+                    sys.refresh_cpu();
+                    let cpus = sys.cpus();
+                    let avg =
+                        cpus.iter().map(|cpu| cpu.cpu_usage()).sum::<f32>() / cpus.len() as f32;
+                    cpu_hist.push_front(avg);
+                    cpu_hist.truncate(cpu_graph_width);
+                    format!("c{avg:>3.0}%")
+                };
+                let mem = {
+                    sys.refresh_memory();
+                    let used = sys.used_memory();
+                    let available = sys.available_memory();
+                    let perc = (used as f32 / available as f32) * 100.0;
+                    format!("m{perc:>3.0}%")
+                };
 
-            // Get the info.
-            let time = chrono::Local::now();
-            let clock = format!(
-                "{:02}:{:02}:{:02}",
-                time.hour(),
-                time.minute(),
-                time.second()
-            );
-            let cpu_avg = {
-                sys.refresh_cpu();
-                let cpus = sys.cpus();
-                let avg = cpus.iter().map(|cpu| cpu.cpu_usage()).sum::<f32>() / cpus.len() as f32;
-                cpu_hist.push_front(avg);
-                cpu_hist.truncate(cpu_graph_width);
-                avg
-            };
-            let mem = {
-                sys.refresh_memory();
-                let used = sys.used_memory();
-                let available = sys.available_memory();
-                (used as f32 / available as f32) * 100.0
-            };
-            let info = format!("{clock}  m{mem:>3.0}%  c{cpu_avg:>3.0}%  ");
+                // Draw the info.
+                let mut x = padding_left;
+                clock.draw(&font).draw_onto_pixels(&mut pixels, x);
+                x += clock_width + space;
+                mem.draw(&font).draw_onto_pixels(&mut pixels, x);
+                x += mem_width + space;
+                cpu_avg.draw(&font).draw_onto_pixels(&mut pixels, x);
+                // x += cpu_width + space;
 
-            // Draw the info.
-            let mut x0 = 0;
-            for ch in info.chars() {
-                if let Some(glyph) = font.glyph(ch) {
-                    for (y, row) in glyph.rows().enumerate() {
-                        for (xg, &cell) in row.iter().enumerate() {
-                            let x = x0 + xg;
-                            let px = if cell {
-                                FOREGROUND
-                            } else {
-                                BACKGROUND
-                            };
-                            let idx = (y * width as usize + x) * PIXEL_SIZE;
-                            pixels.frame_mut()[idx..idx + PIXEL_SIZE].copy_from_slice(&px);
-                        }
+                // Draw the cpu graph.
+                let mut x0 = width as usize - cpu_graph_width;
+                for usage in cpu_hist.iter() {
+                    let blank = height as usize - ((usage / 100.0) * height as f32) as usize;
+                    for y in 0..height as usize {
+                        let px = if y < blank { BACKGROUND } else { FOREGROUND };
+                        let idx = (y * width as usize + x0) * PIXEL_SIZE;
+                        pixels.frame_mut()[idx..idx + PIXEL_SIZE].copy_from_slice(&px);
                     }
-                    x0 += glyph.width;
+                    x0 += 1
+                }
+
+                // Try to render.
+                if let Err(err) = pixels.render() {
+                    eprintln!("ERROR: {err}");
+                    *control_flow = ControlFlow::Exit;
+                    return;
                 }
             }
-
-            // Draw the cpu graph.
-            let mut x0 = width as usize - cpu_graph_width;
-            for usage in cpu_hist.iter() {
-                let blank = height as usize - ((usage / 100.0) * height as f32) as usize;
-                for y in 0..height as usize {
-                    let px = if y < blank {
-                        BACKGROUND
-                    } else {
-                        FOREGROUND
-                    };
-                    let idx = (y * width as usize + x0) * PIXEL_SIZE;
-                    pixels.frame_mut()[idx..idx + PIXEL_SIZE].copy_from_slice(&px);
-                }
-                x0 += 1
-            }
-
-            // Try to render.
-            if let Err(err) = pixels.render() {
-                eprintln!("ERROR: {err}");
-                *control_flow = ControlFlow::Exit;
-                return;
-            }
+            _ => (),
         }
 
         if input.update(&event) {
