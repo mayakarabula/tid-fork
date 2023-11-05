@@ -1,5 +1,7 @@
 # _tid_ &mdash; a small system information bar
 
+![screenshot of tid in action](example.png)
+
 This little program is _very_ under construction. 
 It is intended for my personal use, so it is not polished to suit usability for others, at this moment.
 This may change, at some point.
