@@ -74,11 +74,6 @@ impl Draw for String {
     }
 }
 
-fn report_time(t: std::time::Instant, msg: &str) {
-    let ms = t.elapsed().as_secs_f32() * 1000.0;
-    eprintln!("{ms:>9.5} ms: {msg}");
-}
-
 fn load_font<P: AsRef<Path>>(path: P) -> Font {
     let mut file = std::fs::File::open(path).unwrap();
     let mut buf = [0; font::FILE_SIZE];
