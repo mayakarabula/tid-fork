@@ -6,7 +6,7 @@ mod state;
 use std::path::PathBuf;
 use std::str::FromStr;
 
-use font::{Font, Glyph, WrappedFont};
+use font::{Font, WrappedFont};
 use state::{Element, State};
 
 use pixels::{Pixels, PixelsBuilder, SurfaceTexture};
@@ -91,7 +91,7 @@ fn main() -> Result<(), pixels::Error> {
         PathBuf::from_iter([DEFAULT_FONT_DIR, DEFAULT_FONT])
     };
 
-    let font = { font::load_font(font_path.to_str().unwrap()) }; // TODO: Ugh figure this out.
+    let font = font::load_font(font_path.as_path());
 
     let padding_left = 3;
     let elements = [
