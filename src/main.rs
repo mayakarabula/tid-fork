@@ -80,12 +80,10 @@ fn report_time(t: std::time::Instant, msg: &str) {
 }
 
 fn load_font<P: AsRef<Path>>(path: P) -> Font {
-    let start_time_font = std::time::Instant::now();
     let mut file = std::fs::File::open(path).unwrap();
     let mut buf = [0; font::FILE_SIZE];
     file.read_exact(&mut buf).unwrap();
     let font = Font::from_uf2(&buf);
-    report_time(start_time_font, "loaded font");
     font
 }
 
