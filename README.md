@@ -27,12 +27,11 @@ But on _bspwm_ (X11), the transparency works fine.
 
 ## configuration
 
-Pretty much none beyond editing the source.
-But go right ahead.
+_Some_ beyond editing the source.
 
+- **Want to change the font?** Can be specified through command line arguments. Use, for example, the `--font-name geneva12.uf2` or `--font-path /etc/tid/fonts/geneva12.uf2`.
 - **Want to change the color?** Futz around with the `BACKGROUND` and `FOREGROUND` constants.
 The color format is `[u8; 4]` ordered as `[red, green, blue, alpha]`.
-- **Want to change the font?** Modify the `DEFAULT_FONT` constant.
 
 ---
 
