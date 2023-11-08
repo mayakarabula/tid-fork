@@ -1078,6 +1078,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f89dff0959d98c9758c88826cc002e2c3d0b9dfac4139711d1f30de442f1139b"
 
 [[package]]
+name = "psf2"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "db6e6132ee58c113ff86d61c49cb934dd45b3b59971442d0f9e982e62dff5457"
+dependencies = [
+ "hashbrown 0.12.3",
+ "rustc-hash",
+]
+
+[[package]]
 name = "quote"
 version = "1.0.33"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1322,6 +1332,7 @@ version = "0.1.0"
 dependencies = [
  "chrono",
  "pixels",
+ "psf2",
  "sysinfo",
  "winit",
  "winit_input_helper",
