@@ -1,16 +1,16 @@
-#![feature(array_chunks, iter_array_chunks, slice_flatten)]
+#![feature(array_chunks, iter_array_chunks, slice_flatten, iter_intersperse)]
 
 mod font;
+mod state;
 
-use std::collections::VecDeque;
 use std::io::Read;
 use std::path::Path;
 
 use font::Font;
+use state::{Element, State};
 
-use chrono::Timelike;
 use pixels::{Pixels, PixelsBuilder, SurfaceTexture};
-use sysinfo::{CpuExt, System, SystemExt};
+use sysinfo::{System, SystemExt};
 use winit::dpi::{LogicalPosition, LogicalSize};
 use winit::event::Event;
 use winit::event_loop::{ControlFlow, EventLoop};
@@ -33,9 +33,12 @@ struct Block {
 }
 
 impl Block {
+    fn width(&self) -> usize {
+        self.pixels.len() / self.height
+    }
+
     fn rows(&self) -> std::slice::ChunksExact<'_, Pixel> {
-        let width = self.pixels.len() / self.height;
-        self.pixels.chunks_exact(width)
+        self.pixels.chunks_exact(self.width())
     }
 
     fn draw_onto_pixels(self, pixels: &mut Pixels, start_x: usize) {
@@ -78,37 +81,36 @@ fn load_font<P: AsRef<Path>>(path: P) -> Font {
     let mut file = std::fs::File::open(path).unwrap();
     let mut buf = [0; font::FILE_SIZE];
     file.read_exact(&mut buf).unwrap();
-    let font = Font::from_uf2(&buf);
-    font
+    Font::from_uf2(&buf)
 }
 
 fn main() -> Result<(), pixels::Error> {
-    let cpu_graph_width = 120;
-    let mut sys = System::new();
-    let mut cpu_hist = VecDeque::with_capacity(cpu_graph_width);
-
     let font_path = std::path::PathBuf::from_iter([DEFAULT_FONT_DIR, DEFAULT_FONT]);
     let font = { load_font(font_path) };
 
     let padding_left = 3;
-    let space = font.determine_width("  ");
-    let clock_width = font.determine_width("00:00:00");
-    let cpu_width = font.determine_width("c100%");
-    let mem_width = font.determine_width("m100%");
-
-    let set_size_by_font = |font: &Font| {
-        let width = padding_left
-            + clock_width
-            + space
-            + mem_width
-            + space
-            + cpu_width
-            + space
-            + cpu_graph_width;
-        let height = font.height();
-        (width as u32, height as u32)
-    };
-    let (width, height) = set_size_by_font(&font);
+    let elements = [
+        Element::Padding(padding_left),
+        Element::Date(Default::default()),
+        Element::Space,
+        Element::Time(Default::default()),
+        Element::Space,
+        Element::Label("mem".to_string()),
+        Element::Mem(Default::default()),
+        Element::Space,
+        Element::Label("cpu".to_string()),
+        Element::Cpu(Default::default()),
+        Element::Space,
+        Element::CpuGraph(vec![0.0; 120].into()),
+    ];
+    let mut state = State::new(
+        font,
+        System::new(),
+        FOREGROUND,
+        BACKGROUND,
+        elements.into(),
+    );
+    let (width, height) = state.window_size();
 
     let event_loop = EventLoop::new();
     let mut input = WinitInputHelper::new();
@@ -145,51 +147,9 @@ fn main() -> Result<(), pixels::Error> {
                 // Clear the screen before drawing.
                 pixels.frame_mut().fill(0x00);
 
-                // Get the info.
-                let time = chrono::Local::now();
-                let clock = format!(
-                    "{:02}:{:02}:{:02}",
-                    time.hour(),
-                    time.minute(),
-                    time.second()
-                );
-                let cpu_avg = {
-                    sys.refresh_cpu();
-                    let cpus = sys.cpus();
-                    let avg =
-                        cpus.iter().map(|cpu| cpu.cpu_usage()).sum::<f32>() / cpus.len() as f32;
-                    cpu_hist.push_front(avg);
-                    cpu_hist.truncate(cpu_graph_width);
-                    format!("c{avg:>3.0}%")
-                };
-                let mem = {
-                    sys.refresh_memory();
-                    let used = sys.used_memory();
-                    let available = sys.available_memory();
-                    let perc = (used as f32 / available as f32) * 100.0;
-                    format!("m{perc:>3.0}%")
-                };
-
-                // Draw the info.
-                let mut x = padding_left;
-                clock.draw(&font).draw_onto_pixels(&mut pixels, x);
-                x += clock_width + space;
-                mem.draw(&font).draw_onto_pixels(&mut pixels, x);
-                x += mem_width + space;
-                cpu_avg.draw(&font).draw_onto_pixels(&mut pixels, x);
-                // x += cpu_width + space;
-
-                // Draw the cpu graph.
-                let mut x0 = width as usize - cpu_graph_width;
-                for usage in cpu_hist.iter() {
-                    let blank = height as usize - ((usage / 100.0) * height as f32) as usize;
-                    for y in 0..height as usize {
-                        let px = if y < blank { BACKGROUND } else { FOREGROUND };
-                        let idx = (y * width as usize + x0) * PIXEL_SIZE;
-                        pixels.frame_mut()[idx..idx + PIXEL_SIZE].copy_from_slice(&px);
-                    }
-                    x0 += 1
-                }
+                // Update the state, then draw.
+                state.update();
+                state.draw(&mut pixels);
 
                 // Try to render.
                 if let Err(err) = pixels.render() {
