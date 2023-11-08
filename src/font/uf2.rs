@@ -1,4 +1,3 @@
-
 pub const FILE_SIZE: usize = 0x2100;
 const TILE_ROWS: usize = 8;
 const TILES: usize = 4;
@@ -142,4 +141,3 @@ impl Font {
         unsafe { std::mem::transmute(*bytes) }
     }
 }
-

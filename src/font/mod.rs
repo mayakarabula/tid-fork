@@ -36,10 +36,7 @@ impl From<psf2::Glyph<'_>> for GenericGlyph {
             }
         }
         let width = buf.len() / height;
-        Self {
-            buf,
-            width,
-        }
+        Self { buf, width }
     }
 }
 
