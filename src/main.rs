@@ -5,7 +5,7 @@ mod state;
 
 use std::path::{Path, PathBuf};
 
-use font::{Font, WrappedFont};
+use font::Font;
 use state::{Element, History, State};
 
 use pixels::{Pixels, PixelsBuilder, SurfaceTexture};
