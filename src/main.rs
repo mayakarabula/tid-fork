@@ -143,7 +143,10 @@ fn main() -> Result<(), pixels::Error> {
             }
             Event::RedrawRequested(_) => {
                 // Clear the screen before drawing.
-                pixels.frame_mut().fill(0x00);
+                pixels
+                    .frame_mut()
+                    .array_chunks_mut()
+                    .for_each(|px| *px = state.background);
 
                 // Update the state, then draw.
                 state.update();

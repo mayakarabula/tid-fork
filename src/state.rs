@@ -82,8 +82,8 @@ enum Alignment {
 pub struct State {
     pub font: WrappedFont,
     sys: System,
-    foreground: Pixel,
-    background: Pixel,
+    pub foreground: Pixel,
+    pub background: Pixel,
     elements: Vec<Element>,
 }
 
