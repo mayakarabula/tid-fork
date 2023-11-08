@@ -1,7 +1,10 @@
 [package]
 name = "tid"
 version = "0.1.0"
+authors = ["Marieke Westendorp <ma3ke.cyber@gmail.com>"]
+repository = "https://git.sr.ht/~ma3ke/tid"
 edition = "2021"
+description = "A tiny clock and system information bar."
 
 [dependencies]
 chrono = "0.4.31"
