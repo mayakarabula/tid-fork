@@ -8,7 +8,7 @@ use crate::font::{Font, WrappedFont};
 use crate::{Block, Draw, Pixel};
 
 #[derive(Debug, Clone)]
-pub(crate)  struct History<T>(VecDeque<T>);
+pub(crate) struct History<T>(VecDeque<T>);
 
 impl<T: Default + Clone> History<T> {
     pub(crate) fn new(len: usize) -> Self {

@@ -3,11 +3,10 @@
 mod font;
 mod state;
 
-use std::path::PathBuf;
-use std::str::FromStr;
+use std::path::{Path, PathBuf};
 
 use font::{Font, WrappedFont};
-use state::{Element, State, History};
+use state::{Element, History, State};
 
 use pixels::{Pixels, PixelsBuilder, SurfaceTexture};
 use sysinfo::{System, SystemExt};
