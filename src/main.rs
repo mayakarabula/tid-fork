@@ -8,6 +8,7 @@ use std::path::{Path, PathBuf};
 use font::Font;
 use state::{Element, History, State};
 
+use lexopt::{Arg, Parser, ValueExt};
 use pixels::{Pixels, PixelsBuilder, SurfaceTexture};
 use sysinfo::{System, SystemExt};
 use winit::dpi::{LogicalPosition, LogicalSize};
@@ -24,6 +25,7 @@ const PIXEL_SIZE: usize = 4;
 type Pixel = [u8; PIXEL_SIZE];
 const BACKGROUND: Pixel = [0x00; PIXEL_SIZE];
 const FOREGROUND: Pixel = [0xff; PIXEL_SIZE];
+const COLOR_PREFIX: &str = "0x";
 
 #[derive(Debug, Clone)]
 struct Block {
@@ -80,21 +82,98 @@ impl Draw for String {
     }
 }
 
-fn main() -> Result<(), pixels::Error> {
-    let mut args = std::env::args().skip(1);
-    let flag = args.next();
-    let value = args.next();
-    let font_path = if let (Some(flag), Some(value)) = (flag, value) {
-        match (flag.as_str(), value) {
-            ("--font-name", font_name) => PathBuf::from_iter([DEFAULT_FONT_DIR, &font_name]),
-            ("--font-path", font_path) => PathBuf::from_str(&font_path).unwrap(),
-            _ => PathBuf::from_iter([DEFAULT_FONT_DIR, DEFAULT_FONT]),
+struct Args {
+    font_path: Box<Path>,
+    foreground: Pixel,
+    background: Pixel,
+}
+
+fn usage(bin: &str) {
+    const DESCRIPTION: &str = env!("CARGO_PKG_DESCRIPTION");
+    const BIN: &str = env!("CARGO_BIN_NAME");
+    const AUTHORS: &str = env!("CARGO_PKG_AUTHORS");
+    const VERSION: &str = env!("CARGO_PKG_VERSION");
+    const DEFAULT_FG: u32 = u32::from_be_bytes(FOREGROUND);
+    const DEFAULT_BG: u32 = u32::from_be_bytes(BACKGROUND);
+    eprintln!("{DESCRIPTION}");
+    eprintln!();
+    eprintln!("Usage:");
+    eprintln!("    {bin} [OPTIONS]");
+    eprintln!();
+    eprintln!("Options:");
+    eprintln!("    --font-name -n    Set the font name from the default directory.");
+    eprintln!("                      (default: '{DEFAULT_FONT}' in '{DEFAULT_FONT_DIR}')");
+    eprintln!("    --font-path -p    Set the font path.");
+    eprintln!("    --fg              Specify the foreground color as an rgba hex string.");
+    eprintln!("                      (default: {COLOR_PREFIX}{DEFAULT_FG:08x})");
+    eprintln!("    --bg              Specify the background color as an rgba hex string.");
+    eprintln!("                      (default: {COLOR_PREFIX}{DEFAULT_BG:08x})");
+    eprintln!("    --version   -v    Display function.");
+    eprintln!("    --help      -h    Display help.");
+    eprintln!();
+    eprintln!("{BIN} {VERSION} by {AUTHORS}, 2023.");
+}
+
+fn parse_args() -> Result<Args, lexopt::Error> {
+    let mut font_path = PathBuf::from_iter([DEFAULT_FONT_DIR, DEFAULT_FONT]);
+    let mut foreground = FOREGROUND;
+    let mut background = BACKGROUND;
+
+    let mut parser = Parser::from_env();
+    while let Some(arg) = parser.next()? {
+        match arg {
+            Arg::Short('n') | Arg::Long("font-name") => {
+                font_path = PathBuf::from_iter([DEFAULT_FONT_DIR, &parser.value()?.string()?]);
+            }
+            Arg::Short('p') | Arg::Long("font-path") => {
+                font_path = PathBuf::from(parser.value()?);
+            }
+            Arg::Long("fg") => {
+                let hex = parser.value()?.string()?;
+                let stripped = hex.trim().strip_prefix(COLOR_PREFIX).ok_or_else(|| {
+                    format!("color values must be prefixed with '{COLOR_PREFIX}'")
+                })?;
+                let num = u32::from_str_radix(stripped, 16).map_err(|e| e.to_string())?;
+                foreground = num.to_be_bytes();
+            }
+            Arg::Long("bg") => {
+                let hex = parser.value()?.string()?;
+                let stripped = hex.trim().strip_prefix(COLOR_PREFIX).ok_or_else(|| {
+                    format!("color values must be prefixed with '{COLOR_PREFIX}'")
+                })?;
+                let num = u32::from_str_radix(stripped, 16).map_err(|e| e.to_string())?;
+                background = num.to_be_bytes();
+            }
+            Arg::Short('v') | Arg::Long("version") => {
+                println!("{}", env!("CARGO_PKG_VERSION"));
+                std::process::exit(0);
+            }
+            Arg::Short('h') | Arg::Long("help") => {
+                usage(parser.bin_name().unwrap_or(env!("CARGO_BIN_NAME")));
+                std::process::exit(0);
+            }
+            _ => return Err(arg.unexpected()),
         }
-    } else {
-        PathBuf::from_iter([DEFAULT_FONT_DIR, DEFAULT_FONT])
+    }
+
+    Ok(Args {
+        font_path: font_path.into_boxed_path(),
+        foreground,
+        background,
+    })
+}
+
+fn main() -> Result<(), pixels::Error> {
+    let args = match parse_args() {
+        Ok(args) => args,
+        Err(err) => {
+            eprintln!("ERROR: {err}");
+            eprintln!("Run with --help for usage information.");
+            std::process::exit(1);
+        }
     };
 
-    let font = font::load_font(font_path.as_path());
+    let font = font::load_font(&args.font_path);
 
     let padding_left = 3;
     let elements = [
@@ -111,7 +190,13 @@ fn main() -> Result<(), pixels::Error> {
         Element::Space,
         Element::CpuGraph(History::new(120)),
     ];
-    let mut state = State::new(font, System::new(), FOREGROUND, BACKGROUND, elements.into());
+    let mut state = State::new(
+        font,
+        System::new(),
+        args.foreground,
+        args.background,
+        elements.into(),
+    );
     let (width, height) = state.window_size();
 
     let event_loop = EventLoop::new();
