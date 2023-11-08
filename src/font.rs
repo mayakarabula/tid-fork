@@ -92,14 +92,6 @@ impl<'t> Glyph<'t> {
         let bit = self.tiles[glyph_idx][y % 8] >> (7 - bit_idx) & 1;
         bit != 0
     }
-
-    pub fn get_px(&self, x: usize, y: usize) -> Option<bool> {
-        if x > 16 || y > 16 {
-            None
-        } else {
-            Some(self.get_px_uncheched(x, y))
-        }
-    }
 }
 
 /// A uf2 font.
