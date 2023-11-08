@@ -155,15 +155,14 @@ impl State {
                     x += self.font.determine_width("  ");
                     continue;
                 }
-                Element::Label(s) => s.draw(&self.font),
+                Element::Label(s) => s.draw(self),
                 Element::Date(dt) => {
-                    format!("{:04}-{:02}-{:02}", dt.year(), dt.month(), dt.day()).draw(&self.font)
+                    format!("{:04}-{:02}-{:02}", dt.year(), dt.month(), dt.day()).draw(self)
                 }
                 Element::Time(dt) => {
-                    format!("{:02}:{:02}:{:02}", dt.hour(), dt.minute(), dt.second())
-                        .draw(&self.font)
+                    format!("{:02}:{:02}:{:02}", dt.hour(), dt.minute(), dt.second()).draw(self)
                 }
-                Element::Mem(val) | Element::Cpu(val) => format!("{val:>3.0}%").draw(&self.font),
+                Element::Mem(val) | Element::Cpu(val) => format!("{val:>3.0}%").draw(self),
                 Element::CpuGraph(hist) => {
                     let height = self.window_size().1 as usize; // FIXME: Hacky solution.
                     let width = hist.len();

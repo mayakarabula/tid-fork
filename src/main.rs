@@ -51,22 +51,26 @@ impl Block {
 }
 
 trait Draw {
-    fn draw(&self, font: &WrappedFont) -> Block;
+    fn draw(&self, state: &State) -> Block;
 }
 
 impl Draw for String {
-    fn draw(&self, font: &WrappedFont) -> Block {
-        let height = font.height();
-        let glyphs = self.chars().flat_map(|ch| font.glyph(ch));
+    fn draw(&self, state: &State) -> Block {
+        let height = state.font.height();
+        let glyphs = self.chars().flat_map(|ch| state.font.glyph(ch));
         let width: usize = glyphs.clone().map(|g| g.width()).sum();
-        let mut pixels = vec![BACKGROUND; height * width];
+        let mut pixels = vec![state.background; height * width];
         let mut x0 = 0;
         for g in glyphs {
             for (y, row) in g.rows().enumerate() {
                 for (xg, &cell) in row.iter().enumerate() {
                     let x = x0 + xg;
                     let idx = y * width + x;
-                    pixels[idx] = if cell { FOREGROUND } else { BACKGROUND };
+                    pixels[idx] = if cell {
+                        state.foreground
+                    } else {
+                        state.background
+                    };
                 }
             }
             x0 += g.width();
