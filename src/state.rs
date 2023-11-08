@@ -7,6 +7,31 @@ use sysinfo::{CpuExt, System, SystemExt};
 use crate::font::{Font, WrappedFont};
 use crate::{Block, Draw, Pixel};
 
+#[derive(Debug, Clone)]
+pub(crate)  struct History<T>(VecDeque<T>);
+
+impl<T: Default + Clone> History<T> {
+    pub(crate) fn new(len: usize) -> Self {
+        Self(vec![Default::default(); len].into())
+    }
+}
+
+impl<T> History<T> {
+    fn push(&mut self, value: T) {
+        let len = self.0.len();
+        self.0.push_front(value);
+        self.0.truncate(len);
+    }
+
+    fn iter(&self) -> std::collections::vec_deque::Iter<'_, T> {
+        self.0.iter()
+    }
+
+    fn len(&self) -> usize {
+        self.0.len()
+    }
+}
+
 type DateTime = chrono::DateTime<chrono::Local>;
 
 #[derive(Debug, Clone)]
@@ -18,7 +43,7 @@ pub enum Element {
     Time(DateTime),
     Mem(f32),
     Cpu(f32),
-    CpuGraph(VecDeque<f32>),
+    CpuGraph(History<f32>),
 }
 
 impl Element {
@@ -111,11 +136,7 @@ impl State {
                     let cpus = self.sys.cpus();
                     let avg =
                         cpus.iter().map(|cpu| cpu.cpu_usage()).sum::<f32>() / cpus.len() as f32;
-                    // TODO: there must be a better way here.
-                    // Like an actual ringbuffer or something.
-                    let cpu_graph_width = hist.len();
-                    hist.push_front(avg);
-                    hist.truncate(cpu_graph_width);
+                    hist.push(avg);
                 }
                 Element::Label(_) | Element::Padding(_) | Element::Space => {}
             }

@@ -7,7 +7,7 @@ use std::path::PathBuf;
 use std::str::FromStr;
 
 use font::{Font, WrappedFont};
-use state::{Element, State};
+use state::{Element, State, History};
 
 use pixels::{Pixels, PixelsBuilder, SurfaceTexture};
 use sysinfo::{System, SystemExt};
@@ -106,7 +106,7 @@ fn main() -> Result<(), pixels::Error> {
         Element::Label("cpu".to_string()),
         Element::Cpu(Default::default()),
         Element::Space,
-        Element::CpuGraph(vec![0.0; 120].into()),
+        Element::CpuGraph(History::new(120)),
     ];
     let mut state = State::new(font, System::new(), FOREGROUND, BACKGROUND, elements.into());
     let (width, height) = state.window_size();
