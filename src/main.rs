@@ -3,10 +3,10 @@
 mod font;
 mod state;
 
-use std::io::Read;
-use std::path::Path;
+use std::path::PathBuf;
+use std::str::FromStr;
 
-use font::Font;
+use font::{Font, Glyph, WrappedFont};
 use state::{Element, State};
 
 use pixels::{Pixels, PixelsBuilder, SurfaceTexture};
@@ -52,14 +52,14 @@ impl Block {
 }
 
 trait Draw {
-    fn draw(&self, font: &Font) -> Block;
+    fn draw(&self, font: &WrappedFont) -> Block;
 }
 
 impl Draw for String {
-    fn draw(&self, font: &Font) -> Block {
+    fn draw(&self, font: &WrappedFont) -> Block {
         let height = font.height();
         let glyphs = self.chars().flat_map(|ch| font.glyph(ch));
-        let width: usize = glyphs.clone().map(|g| g.width).sum();
+        let width: usize = glyphs.clone().map(|g| g.width()).sum();
         let mut pixels = vec![BACKGROUND; height * width];
         let mut x0 = 0;
         for g in glyphs {
@@ -70,23 +70,28 @@ impl Draw for String {
                     pixels[idx] = if cell { FOREGROUND } else { BACKGROUND };
                 }
             }
-            x0 += g.width;
+            x0 += g.width();
         }
 
         Block { height, pixels }
     }
 }
 
-fn load_font<P: AsRef<Path>>(path: P) -> Font {
-    let mut file = std::fs::File::open(path).unwrap();
-    let mut buf = [0; font::FILE_SIZE];
-    file.read_exact(&mut buf).unwrap();
-    Font::from_uf2(&buf)
-}
-
 fn main() -> Result<(), pixels::Error> {
-    let font_path = std::path::PathBuf::from_iter([DEFAULT_FONT_DIR, DEFAULT_FONT]);
-    let font = { load_font(font_path) };
+    let mut args = std::env::args().skip(1);
+    let flag = args.next();
+    let value = args.next();
+    let font_path = if let (Some(flag), Some(value)) = (flag, value) {
+        match (flag.as_str(), value) {
+            ("--font-name", font_name) => PathBuf::from_iter([DEFAULT_FONT_DIR, &font_name]),
+            ("--font-path", font_path) => PathBuf::from_str(&font_path).unwrap(),
+            _ => PathBuf::from_iter([DEFAULT_FONT_DIR, DEFAULT_FONT]),
+        }
+    } else {
+        PathBuf::from_iter([DEFAULT_FONT_DIR, DEFAULT_FONT])
+    };
+
+    let font = { font::load_font(font_path.to_str().unwrap()) }; // TODO: Ugh figure this out.
 
     let padding_left = 3;
     let elements = [
@@ -103,13 +108,7 @@ fn main() -> Result<(), pixels::Error> {
         Element::Space,
         Element::CpuGraph(vec![0.0; 120].into()),
     ];
-    let mut state = State::new(
-        font,
-        System::new(),
-        FOREGROUND,
-        BACKGROUND,
-        elements.into(),
-    );
+    let mut state = State::new(font, System::new(), FOREGROUND, BACKGROUND, elements.into());
     let (width, height) = state.window_size();
 
     let event_loop = EventLoop::new();

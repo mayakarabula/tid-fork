@@ -4,7 +4,8 @@ use chrono::{Datelike, Timelike};
 use pixels::Pixels;
 use sysinfo::{CpuExt, System, SystemExt};
 
-use crate::{font::Font, Block, Draw, Pixel};
+use crate::font::{Font, WrappedFont};
+use crate::{Block, Draw, Pixel};
 
 type DateTime = chrono::DateTime<chrono::Local>;
 
@@ -21,7 +22,7 @@ pub enum Element {
 }
 
 impl Element {
-    fn width_with_font(&self, font: &Font) -> usize {
+    fn width_with_font(&self, font: &WrappedFont) -> usize {
         match self {
             Element::Padding(width) => *width,
             Element::Space => font.determine_width("  "),
@@ -54,7 +55,7 @@ enum Alignment {
 }
 
 pub struct State {
-    pub font: Font,
+    pub font: WrappedFont,
     sys: System,
     foreground: Pixel,
     background: Pixel,
@@ -65,7 +66,7 @@ impl State {
     // TODO: I think a builder pattern would be nicer here, especially since that makes for nice
     // defaults.
     pub fn new(
-        font: Font,
+        font: WrappedFont,
         sys: System,
         foreground: Pixel,
         background: Pixel,
