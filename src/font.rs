@@ -141,21 +141,3 @@ impl Font {
         unsafe { std::mem::transmute(*bytes) }
     }
 }
-
-/* Implementation toolbelt.
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    const UF2_BYTES: &[u8; std::mem::size_of::<Font>()] = include_bytes!("../fonts/newyork12.uf2");
-
-    #[test]
-    fn load_uf2() {
-        let font = Font::from_uf2(*UF2_BYTES);
-        let text = "0123456789 ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz !@#$%^&*(){}?+_|";
-        for ch in text.chars() {
-            font.draw(ch)
-        }
-    }
-}
-*/
