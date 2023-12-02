@@ -1,5 +1,6 @@
 use std::collections::VecDeque;
 
+use battery::Battery;
 use chrono::{Datelike, Timelike};
 use pixels::Pixels;
 use sysinfo::{CpuExt, System, SystemExt};
@@ -43,6 +44,7 @@ pub enum Element {
     Time(DateTime),
     Mem(f32),
     Cpu(f32),
+    Battery(f32),
     CpuGraph(History<f32>),
 }
 
@@ -56,6 +58,7 @@ impl Element {
             Element::Time(_) => font.determine_width("00:00:00"),
             Element::Mem(_) => font.determine_width("000%"),
             Element::Cpu(_) => font.determine_width("000%"),
+            Element::Battery(_) => font.determine_width("000%"),
             Element::CpuGraph(hist) => hist.len(),
         }
     }
@@ -67,6 +70,7 @@ impl Element {
             | Element::Label(_)
             | Element::Mem(_)
             | Element::Cpu(_)
+            | Element::Battery(_)
             | Element::CpuGraph(_) => Alignment::Right,
             Element::Date(_) | Element::Time(_) => Alignment::Left,
         }
@@ -82,6 +86,7 @@ enum Alignment {
 pub struct State {
     pub font: WrappedFont,
     sys: System,
+    battery: Option<Battery>,
     pub foreground: Pixel,
     pub background: Pixel,
     elements: Vec<Element>,
@@ -93,6 +98,7 @@ impl State {
     pub fn new(
         font: WrappedFont,
         sys: System,
+        battery: Option<Battery>,
         foreground: Pixel,
         background: Pixel,
         elements: Vec<Element>,
@@ -100,6 +106,7 @@ impl State {
         Self {
             font,
             sys,
+            battery,
             foreground,
             background,
             elements,
@@ -130,6 +137,14 @@ impl State {
                     self.sys.refresh_cpu();
                     let cpus = self.sys.cpus();
                     *avg = cpus.iter().map(|cpu| cpu.cpu_usage()).sum::<f32>() / cpus.len() as f32;
+                }
+                Element::Battery(full) => {
+                    if let Some(bat) = &mut self.battery {
+                        let _ = bat.refresh();
+                        *full = bat
+                            .state_of_charge()
+                            .get::<battery::units::ratio::percent>();
+                    }
                 }
                 Element::CpuGraph(hist) => {
                     self.sys.refresh_cpu();
@@ -162,7 +177,9 @@ impl State {
                 Element::Time(dt) => {
                     format!("{:02}:{:02}:{:02}", dt.hour(), dt.minute(), dt.second()).draw(self)
                 }
-                Element::Mem(val) | Element::Cpu(val) => format!("{val:>3.0}%").draw(self),
+                Element::Mem(val) | Element::Cpu(val) | Element::Battery(val) => {
+                    format!("{val:>3.0}%").draw(self)
+                }
                 Element::CpuGraph(hist) => {
                     let height = self.window_size().1 as usize; // FIXME: Hacky solution.
                     let width = hist.len();

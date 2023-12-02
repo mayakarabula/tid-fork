@@ -7,6 +7,7 @@ edition = "2021"
 description = "A tiny clock and system information bar."
 
 [dependencies]
+battery = "0.7.8"
 chrono = "0.4.31"
 lexopt = "0.3.0"
 pixels = "0.13.0"

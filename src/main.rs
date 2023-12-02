@@ -5,6 +5,7 @@ mod state;
 
 use std::path::{Path, PathBuf};
 
+use battery::Manager;
 use font::Font;
 use state::{Element, History, State};
 
@@ -182,6 +183,9 @@ fn main() -> Result<(), pixels::Error> {
         Element::Space,
         Element::Time(Default::default()),
         Element::Space,
+        Element::Label("bat".to_string()),
+        Element::Battery(Default::default()),
+        Element::Space,
         Element::Label("mem".to_string()),
         Element::Mem(Default::default()),
         Element::Space,
@@ -193,6 +197,10 @@ fn main() -> Result<(), pixels::Error> {
     let mut state = State::new(
         font,
         System::new(),
+        Manager::new().map_or(None, |m| match m.batteries() {
+            Ok(mut bats) => bats.next().map(|err| err.ok()).flatten(),
+            Err(_) => None,
+        }),
         args.foreground,
         args.background,
         elements.into(),
