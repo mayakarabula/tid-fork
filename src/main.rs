@@ -206,11 +206,14 @@ fn main() -> Result<(), pixels::Error> {
         elements.into(),
     );
     let (width, height) = state.window_size();
+    let size = LogicalSize::new(width, height);
 
     let event_loop = EventLoop::new();
     let mut input = WinitInputHelper::new();
     let window = WindowBuilder::new()
-        .with_inner_size(LogicalSize::new(width, height))
+        .with_inner_size(size)
+        .with_min_inner_size(size)
+        .with_max_inner_size(size)
         .with_transparent(true)
         .with_decorations(false)
         .with_title("tid")
@@ -226,7 +229,6 @@ fn main() -> Result<(), pixels::Error> {
         let window_size = window.inner_size();
         let surface_texture = SurfaceTexture::new(window_size.width, window_size.height, &window);
         PixelsBuilder::new(width, height, surface_texture)
-            .blend_state(pixels::wgpu::BlendState::REPLACE)
             .clear_color(pixels::wgpu::Color::TRANSPARENT)
             .build()?
     };
