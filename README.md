@@ -3,7 +3,7 @@
 ![screenshot of tid in action](example.png)
 
 This little program is _slightly_ under construction. 
-It is intended for my personal use, but by now it is getting polished enough that it may be useful to others as well.
+It is intended for my personal use, but by now it is polished enough that it may be useful to others as well.
 Further improvements will come, especially based on problems from users beyond myself.
 I am enjoying it a lot and it fits my needs.
 
@@ -21,6 +21,15 @@ sudo cp -r fonts /etc/tid/fonts
 
 (I may put these operations into a makefile or shell script at some point, but it's quite trivial.)
 
+## what it does
+
+- Displays the date and time.
+- Can display the battery percentage.
+- Displays the memory use as a percentage.
+- Displays the cpu use as a percentage.
+- Displays the cpu use history as a graph.
+- Can show the current playback state of `mpd`.
+
 ## usage & configuration
 
 As of now, _tid_ can be configured through command line arguments.
@@ -33,6 +42,10 @@ As of now, _tid_ can be configured through command line arguments.
 - **Want to change the color?** 
   You can set the foreground and background color by providing a `0x{r}{g}{b}{a}` formatted hex string as parameters after the `--fg` and `--bg` flags, respectively.
   For example, 
+- **Want to change the order and selection of items?**
+  There is no nice way to this at this moment, beyond changing the source code.
+  For anybody who is somewhat familiar with editing source in any language, configuring this may be an interesting little challenge or more likely very easy.
+  Nonetheless, it is pretty likely that I add some mechanims to do this in the future, but I will only embark on that once I implement a config file system.
 
   ```
   tid --fg 0xcc33aaff --bg 0xffffff00
@@ -55,6 +68,8 @@ Options:
                       (default: 0xffffffff)
     --bg              Specify the background color as an rgba hex string.
                       (default: 0x00000000)
+    --mpd-address     Specify the address for the mpd connection.
+                      (default: 127.0.0.1:6600)
     --version   -v    Display function.
     --help      -h    Display help.
 ```
