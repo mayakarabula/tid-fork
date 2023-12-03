@@ -22,6 +22,8 @@ use winit_input_helper::WinitInputHelper;
 const DEFAULT_FONT_DIR: &str = "/etc/tid/fonts";
 const DEFAULT_FONT: &str = "cream12.uf2";
 
+const MPD_ADDR: &str = "127.0.0.1:6600";
+
 const PIXEL_SIZE: usize = 4;
 type Pixel = [u8; PIXEL_SIZE];
 const BACKGROUND: Pixel = [0x00; PIXEL_SIZE];
@@ -193,6 +195,8 @@ fn main() -> Result<(), pixels::Error> {
         Element::Cpu(Default::default()),
         Element::Space,
         Element::CpuGraph(History::new(120)),
+        Element::Space,
+        Element::PlaybackState(Default::default()),
     ];
     let mut state = State::new(
         font,
@@ -201,6 +205,7 @@ fn main() -> Result<(), pixels::Error> {
             Ok(mut bats) => bats.next().map(|err| err.ok()).flatten(),
             Err(_) => None,
         }),
+        mpd::Client::connect(MPD_ADDR).ok(),
         args.foreground,
         args.background,
         elements.into(),

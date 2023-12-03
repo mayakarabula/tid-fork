@@ -35,6 +35,14 @@ impl<T> History<T> {
 
 type DateTime = chrono::DateTime<chrono::Local>;
 
+fn playback_state_symbol(state: mpd::State) -> &'static str {
+    match state {
+        mpd::State::Stop => "#",
+        mpd::State::Play => ">",
+        mpd::State::Pause => "\"",
+    }
+}
+
 #[derive(Debug, Clone)]
 pub enum Element {
     Padding(usize),
@@ -46,6 +54,7 @@ pub enum Element {
     Cpu(f32),
     Battery(f32),
     CpuGraph(History<f32>),
+    PlaybackState(mpd::State),
 }
 
 impl Element {
@@ -60,6 +69,11 @@ impl Element {
             Element::Cpu(_) => font.determine_width("000%"),
             Element::Battery(_) => font.determine_width("000%"),
             Element::CpuGraph(hist) => hist.len(),
+            Element::PlaybackState(_) => [mpd::State::Stop, mpd::State::Play, mpd::State::Pause]
+                .map(|state| font.determine_width(playback_state_symbol(state)))
+                .into_iter()
+                .max()
+                .unwrap(),
         }
     }
 
@@ -71,7 +85,8 @@ impl Element {
             | Element::Mem(_)
             | Element::Cpu(_)
             | Element::Battery(_)
-            | Element::CpuGraph(_) => Alignment::Right,
+            | Element::CpuGraph(_)
+            | Self::PlaybackState(_) => Alignment::Right,
             Element::Date(_) | Element::Time(_) => Alignment::Left,
         }
     }
@@ -87,6 +102,7 @@ pub struct State {
     pub font: WrappedFont,
     sys: System,
     battery: Option<Battery>,
+    music: Option<mpd::Client>,
     pub foreground: Pixel,
     pub background: Pixel,
     elements: Vec<Element>,
@@ -99,6 +115,7 @@ impl State {
         font: WrappedFont,
         sys: System,
         battery: Option<Battery>,
+        music: Option<mpd::Client>,
         foreground: Pixel,
         background: Pixel,
         elements: Vec<Element>,
@@ -106,6 +123,7 @@ impl State {
         Self {
             font,
             sys,
+            music,
             battery,
             foreground,
             background,
@@ -153,6 +171,18 @@ impl State {
                         cpus.iter().map(|cpu| cpu.cpu_usage()).sum::<f32>() / cpus.len() as f32;
                     hist.push(avg);
                 }
+                Element::PlaybackState(state) => {
+                    // If we have access to mpd, and we get Some(Status) when we ask it, change the
+                    // state to that status' state.
+                    if let Some(status) = self
+                        .music
+                        .as_mut()
+                        .map(|music| music.status().ok())
+                        .flatten()
+                    {
+                        *state = status.state
+                    }
+                }
                 Element::Label(_) | Element::Padding(_) | Element::Space => {}
             }
         }
@@ -199,6 +229,10 @@ impl State {
                     }
 
                     Block { height, pixels }
+                }
+                Element::PlaybackState(state) => {
+                    // FIXME: I think draw should just be able to take a &str, not a string per se?
+                    playback_state_symbol(*state).to_string().draw(self)
                 }
             };
 
