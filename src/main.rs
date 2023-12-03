@@ -3,7 +3,9 @@
 mod font;
 mod state;
 
+use std::net::SocketAddr;
 use std::path::{Path, PathBuf};
+use std::str::FromStr;
 
 use battery::Manager;
 use font::Font;
@@ -89,6 +91,7 @@ struct Args {
     font_path: Box<Path>,
     foreground: Pixel,
     background: Pixel,
+    mpd_addr: SocketAddr,
 }
 
 fn usage(bin: &str) {
@@ -111,6 +114,8 @@ fn usage(bin: &str) {
     eprintln!("                      (default: {COLOR_PREFIX}{DEFAULT_FG:08x})");
     eprintln!("    --bg              Specify the background color as an rgba hex string.");
     eprintln!("                      (default: {COLOR_PREFIX}{DEFAULT_BG:08x})");
+    eprintln!("    --mpd-address     Specify the address for the mpd connection.");
+    eprintln!("                      (default: {MPD_ADDR})");
     eprintln!("    --version   -v    Display function.");
     eprintln!("    --help      -h    Display help.");
     eprintln!();
@@ -121,6 +126,7 @@ fn parse_args() -> Result<Args, lexopt::Error> {
     let mut font_path = PathBuf::from_iter([DEFAULT_FONT_DIR, DEFAULT_FONT]);
     let mut foreground = FOREGROUND;
     let mut background = BACKGROUND;
+    let mut mpd_addr = MPD_ADDR.to_string();
 
     let mut parser = Parser::from_env();
     while let Some(arg) = parser.next()? {
@@ -147,6 +153,7 @@ fn parse_args() -> Result<Args, lexopt::Error> {
                 let num = u32::from_str_radix(stripped, 16).map_err(|e| e.to_string())?;
                 background = num.to_be_bytes();
             }
+            Arg::Long("mpd-address") => mpd_addr = parser.value()?.string()?,
             Arg::Short('v') | Arg::Long("version") => {
                 println!("{}", env!("CARGO_PKG_VERSION"));
                 std::process::exit(0);
@@ -163,6 +170,8 @@ fn parse_args() -> Result<Args, lexopt::Error> {
         font_path: font_path.into_boxed_path(),
         foreground,
         background,
+        mpd_addr: SocketAddr::from_str(&mpd_addr)
+            .map_err(|err| lexopt::Error::Custom(Box::new(err)))?,
     })
 }
 
@@ -205,7 +214,7 @@ fn main() -> Result<(), pixels::Error> {
             Ok(mut bats) => bats.next().map(|err| err.ok()).flatten(),
             Err(_) => None,
         }),
-        mpd::Client::connect(MPD_ADDR).ok(),
+        mpd::Client::connect(args.mpd_addr).ok(),
         args.foreground,
         args.background,
         elements.into(),
