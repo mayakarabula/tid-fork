@@ -232,7 +232,7 @@ impl State {
                 }
                 Element::PlaybackState(state) => {
                     // FIXME: I think draw should just be able to take a &str, not a string per se?
-                    playback_state_symbol(*state).to_string().draw(self)
+                    playback_state_symbol(*state).draw(self)
                 }
             };
 

@@ -61,7 +61,7 @@ trait Draw {
     fn draw(&self, state: &State) -> Block;
 }
 
-impl Draw for String {
+impl Draw for &str {
     fn draw(&self, state: &State) -> Block {
         let height = state.font.height();
         let glyphs = self.chars().flat_map(|ch| state.font.glyph(ch));
@@ -84,6 +84,12 @@ impl Draw for String {
         }
 
         Block { height, pixels }
+    }
+}
+
+impl Draw for String {
+    fn draw(&self, state: &State) -> Block {
+        self.as_str().draw(state)
     }
 }
 
