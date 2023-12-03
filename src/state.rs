@@ -181,7 +181,7 @@ impl State {
                     format!("{val:>3.0}%").draw(self)
                 }
                 Element::CpuGraph(hist) => {
-                    let height = self.window_size().1 as usize; // FIXME: Hacky solution.
+                    let height = self.window_size().1 as usize;
                     let width = hist.len();
                     let mut pixels = vec![self.background; height * width];
 
