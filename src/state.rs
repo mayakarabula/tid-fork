@@ -174,11 +174,7 @@ impl State {
                 Element::PlaybackState(state) => {
                     // If we have access to mpd, and we get Some(Status) when we ask it, change the
                     // state to that status' state.
-                    if let Some(status) = self
-                        .music
-                        .as_mut()
-                        .map(|music| music.status().ok())
-                        .flatten()
+                    if let Some(status) = self.music.as_mut().and_then(|music| music.status().ok())
                     {
                         *state = status.state
                     }

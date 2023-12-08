@@ -217,7 +217,7 @@ fn main() -> Result<(), pixels::Error> {
         font,
         System::new(),
         Manager::new().map_or(None, |m| match m.batteries() {
-            Ok(mut bats) => bats.next().map(|err| err.ok()).flatten(),
+            Ok(mut bats) => bats.next().and_then(|err| err.ok()),
             Err(_) => None,
         }),
         mpd::Client::connect(args.mpd_addr).ok(),
