@@ -142,17 +142,21 @@ impl State {
     }
 
     pub fn update(&mut self) {
+        // We refresh these once. This is good practice anyways, but refreshing multiple
+        // times in quick succession may return NaN's on MacOS, apparently.
+        // Thanks, Maya for noticing this!
+        self.sys.refresh_cpu();
+        self.sys.refresh_memory();
+
         for element in self.elements.iter_mut() {
             match element {
                 Element::Date(dt) | Element::Time(dt) => *dt = chrono::Local::now(),
                 Element::Mem(avl) => {
-                    self.sys.refresh_memory();
                     let used = self.sys.used_memory();
                     let available = self.sys.available_memory();
                     *avl = used as f32 / available as f32 * 100.0;
                 }
                 Element::Cpu(avg) => {
-                    self.sys.refresh_cpu();
                     let cpus = self.sys.cpus();
                     *avg = cpus.iter().map(|cpu| cpu.cpu_usage()).sum::<f32>() / cpus.len() as f32;
                 }
@@ -165,7 +169,6 @@ impl State {
                     }
                 }
                 Element::CpuGraph(hist) => {
-                    self.sys.refresh_cpu();
                     let cpus = self.sys.cpus();
                     let avg =
                         cpus.iter().map(|cpu| cpu.cpu_usage()).sum::<f32>() / cpus.len() as f32;
