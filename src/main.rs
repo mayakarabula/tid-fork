@@ -84,16 +84,16 @@ impl Draw for String {
 
 fn setup_window(size: PhysicalSize<u32>, event_loop: &EventLoop<()>) -> Window {
     let builder = WindowBuilder::new()
-        .with_inner_size(size)
-        .with_min_inner_size(size)
-        .with_max_inner_size(size)
-        .with_transparent(true)
-        .with_decorations(false)
-        .with_title(WINDOW_NAME)
-        .with_window_level(WindowLevel::AlwaysOnTop)
-        .with_resizable(false)
         .with_active(false)
-        .with_position(LogicalPosition::new(0, 0));
+        .with_decorations(false)
+        .with_resizable(false)
+        .with_transparent(true)
+        .with_title(WINDOW_NAME)
+        .with_inner_size(size)
+        .with_max_inner_size(size)
+        .with_min_inner_size(size)
+        .with_position(LogicalPosition::new(0, 0))
+        .with_window_level(WindowLevel::AlwaysOnTop);
 
     // On Linux (and BSDs, which I have not been able to test), Wayland and X11 are supported. On
     // these platforms, we can set a name. On X11 specifically, we want to set the window type to
