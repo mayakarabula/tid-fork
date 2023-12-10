@@ -97,9 +97,6 @@ Options:
 
 ## weirdness
 
-The background should be transparent, but it may not be depending on your window manager.
-For example, my installation of [_hikari_](https://hikari.acmelabs.space/) does not support transparency.
-But on _bspwm_ (X11), the transparency works fine.
 
 ---
 
