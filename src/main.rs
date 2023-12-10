@@ -82,7 +82,11 @@ impl Draw for String {
     }
 }
 
-fn setup_window(size: PhysicalSize<u32>, event_loop: &EventLoop<()>) -> Window {
+fn setup_window(
+    size: PhysicalSize<u32>,
+    position: LogicalPosition<u32>,
+    event_loop: &EventLoop<()>,
+) -> Window {
     let builder = WindowBuilder::new()
         .with_active(false)
         .with_decorations(false)
@@ -92,7 +96,7 @@ fn setup_window(size: PhysicalSize<u32>, event_loop: &EventLoop<()>) -> Window {
         .with_inner_size(size)
         .with_max_inner_size(size)
         .with_min_inner_size(size)
-        .with_position(LogicalPosition::new(0, 0))
+        .with_position(position)
         .with_window_level(WindowLevel::AlwaysOnTop);
 
     // On Linux (and BSDs, which I have not been able to test), Wayland and X11 are supported. On
@@ -157,7 +161,7 @@ fn main() -> Result<(), pixels::Error> {
 
     let event_loop = EventLoop::new();
     let mut input = WinitInputHelper::new();
-    let window = setup_window(size, &event_loop);
+    let window = setup_window(size, config.position, &event_loop);
 
     let mut pixels = {
         let window_size = window.inner_size();

@@ -89,14 +89,14 @@ Options:
                       (default: 0xffffffff)
     --bg              Specify the background color as an rgba hex string.
                       (default: 0x00000000)
+    --position        Set the requested position to spawn the window.
+                      Must be set as 'x,y' without a space, where x and y are
+                      unsigned integers.  (default: '0,0')
     --mpd-address     Specify the address for the mpd connection.
                       (default: 127.0.0.1:6600)
     --version   -v    Display function.
     --help      -h    Display help.
 ```
-
-## weirdness
-
 
 ## thanks
 

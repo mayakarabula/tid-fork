@@ -5,6 +5,7 @@ use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
 use lexopt::{Arg, Parser, ValueExt};
+use winit::dpi::LogicalPosition;
 
 const CONFIG_FILE_PATH: &str = "/etc/tid/tid.config";
 
@@ -22,6 +23,7 @@ pub struct Config {
     pub font_path: Box<Path>,
     pub foreground: Pixel,
     pub background: Pixel,
+    pub position: LogicalPosition<u32>,
     pub mpd_addr: SocketAddr,
 }
 
@@ -31,6 +33,7 @@ impl Default for Config {
             font_path: PathBuf::from_iter([DEFAULT_FONT_DIR, DEFAULT_FONT]).into_boxed_path(),
             foreground: DEFAULT_FOREGROUND,
             background: DEFAULT_BACKGROUND,
+            position: LogicalPosition::default(),
             mpd_addr: SocketAddr::from_str(DEFAULT_MPD_ADDR)
                 .expect("DEFAULT_MPD_ADDR must be valid"),
         }
@@ -43,6 +46,7 @@ struct Args {
     pub font_path: Option<PathBuf>,
     pub foreground: Option<Pixel>,
     pub background: Option<Pixel>,
+    pub position: Option<(u32, u32)>,
     pub mpd_addr: Option<SocketAddr>,
 }
 
@@ -88,6 +92,19 @@ fn parse_config(config: &str) -> Result<Args, String> {
                 let num = u32::from_str_radix(stripped, 16).map_err(|e| e.to_string())?;
                 args.background = Some(num.to_be_bytes());
             }
+            "position" => {
+                let (x, y) = argument.split_once(',').ok_or(
+                    "position must be formatted as 'x,y' (no space!)\
+                    where x and y are positive integers",
+                )?;
+                let x: u32 = x
+                    .parse()
+                    .map_err(|err| format!("error while parsing x value in position: {err}"))?;
+                let y: u32 = y
+                    .parse()
+                    .map_err(|err| format!("error while parsing y value in position: {err}"))?;
+                args.position = Some((x, y));
+            }
             "mpd_addr" => {
                 args.mpd_addr = Some(SocketAddr::from_str(argument).map_err(|err| err.to_string())?)
             }
@@ -128,6 +145,20 @@ fn parse_args() -> Result<Args, lexopt::Error> {
                 })?;
                 let num = u32::from_str_radix(stripped, 16).map_err(|e| e.to_string())?;
                 args.background = Some(num.to_be_bytes());
+            }
+            Arg::Long("position") => {
+                let argument = parser.value()?.string()?;
+                let (x, y) = argument.split_once(',').ok_or(
+                    "position must be formatted as 'x,y' (no space!)\
+                    where x and y are positive integers",
+                )?;
+                let x: u32 = x
+                    .parse()
+                    .map_err(|err| format!("error while parsing x value in position: {err}"))?;
+                let y: u32 = y
+                    .parse()
+                    .map_err(|err| format!("error while parsing y value in position: {err}"))?;
+                args.position = Some((x, y));
             }
             Arg::Long("mpd-address") => {
                 args.mpd_addr = Some(
@@ -180,6 +211,9 @@ pub fn configure() -> Result<Config, Box<dyn std::error::Error>> {
         if let Some(background) = args.background {
             config.background = background
         }
+        if let Some(position) = args.position {
+            config.position = LogicalPosition::from(position)
+        }
         if let Some(mpd_addr) = args.mpd_addr {
             config.mpd_addr = mpd_addr
         }
@@ -208,6 +242,9 @@ fn usage(bin: &str) {
     eprintln!("                      (default: {COLOR_PREFIX}{DEFAULT_FG:08x})");
     eprintln!("    --bg              Specify the background color as an rgba hex string.");
     eprintln!("                      (default: {COLOR_PREFIX}{DEFAULT_BG:08x})");
+    eprintln!("    --position        Set the requested position to spawn the window.");
+    eprintln!("                      Must be set as 'x,y' without a space, where x and y are");
+    eprintln!("                      unsigned integers.  (default: '0,0')");
     eprintln!("    --mpd-address     Specify the address for the mpd connection.");
     eprintln!("                      (default: {DEFAULT_MPD_ADDR})");
     eprintln!("    --version   -v    Display function.");
