@@ -106,6 +106,7 @@ fn setup_window(
     // Thanks to Maya.
     #[cfg(any(target_os = "linux", target_os = "freebsd", target_os = "openbsd"))]
     let builder = builder
+        .with_base_size(size)
         .with_name(WINDOW_NAME, WINDOW_NAME)
         .with_x11_window_type(vec![XWindowType::Dock]);
 
