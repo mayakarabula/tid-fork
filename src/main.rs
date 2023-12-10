@@ -14,9 +14,12 @@ use sysinfo::{System, SystemExt};
 use winit::dpi::{LogicalPosition, PhysicalSize};
 use winit::event::Event;
 use winit::event_loop::{ControlFlow, EventLoop};
+#[cfg(any(target_os = "linux", target_os = "freebsd", target_os = "openbsd"))]
 use winit::platform::x11::{WindowBuilderExtX11, XWindowType};
-use winit::window::{WindowBuilder, WindowLevel};
+use winit::window::{Window, WindowBuilder, WindowLevel};
 use winit_input_helper::WinitInputHelper;
+
+const WINDOW_NAME: &str = env!("CARGO_BIN_NAME");
 
 #[derive(Debug, Clone)]
 struct Block {
@@ -79,6 +82,32 @@ impl Draw for String {
     }
 }
 
+fn setup_window(size: PhysicalSize<u32>, event_loop: &EventLoop<()>) -> Window {
+    let builder = WindowBuilder::new()
+        .with_inner_size(size)
+        .with_min_inner_size(size)
+        .with_max_inner_size(size)
+        .with_transparent(true)
+        .with_decorations(false)
+        .with_title(WINDOW_NAME)
+        .with_window_level(WindowLevel::AlwaysOnTop)
+        .with_resizable(false)
+        .with_active(false)
+        .with_position(LogicalPosition::new(0, 0));
+
+    // On Linux (and BSDs, which I have not been able to test), Wayland and X11 are supported. On
+    // these platforms, we can set a name. On X11 specifically, we want to set the window type to
+    // Dock, which means it is properly treated as an immovable bar.
+    //
+    // Thanks to Maya.
+    #[cfg(any(target_os = "linux", target_os = "freebsd", target_os = "openbsd"))]
+    let builder = builder
+        .with_name(WINDOW_NAME, WINDOW_NAME)
+        .with_x11_window_type(vec![XWindowType::Dock]);
+
+    builder.build(event_loop).unwrap()
+}
+
 fn main() -> Result<(), pixels::Error> {
     let config = match configure() {
         Ok(args) => args,
@@ -128,21 +157,7 @@ fn main() -> Result<(), pixels::Error> {
 
     let event_loop = EventLoop::new();
     let mut input = WinitInputHelper::new();
-    let window = WindowBuilder::new()
-        .with_inner_size(size)
-        .with_min_inner_size(size)
-        .with_max_inner_size(size)
-        .with_transparent(true)
-        .with_decorations(false)
-        .with_title("tid")
-        .with_window_level(WindowLevel::AlwaysOnTop)
-        .with_resizable(false)
-        .with_active(false)
-        .with_position(LogicalPosition::new(0, 0))
-        .with_name("tid", "tid")
-        .with_x11_window_type(vec![XWindowType::Dock])
-        .build(&event_loop)
-        .unwrap();
+    let window = setup_window(size, &event_loop);
 
     let mut pixels = {
         let window_size = window.inner_size();
