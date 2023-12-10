@@ -11,10 +11,10 @@ use state::{Element, History, State};
 
 use pixels::{Pixels, PixelsBuilder, SurfaceTexture};
 use sysinfo::{System, SystemExt};
-use winit::dpi::{LogicalPosition, LogicalSize};
+use winit::dpi::{LogicalPosition, PhysicalSize};
 use winit::event::Event;
 use winit::event_loop::{ControlFlow, EventLoop};
-use winit::platform::wayland::WindowBuilderExtWayland;
+use winit::platform::x11::{WindowBuilderExtX11, XWindowType};
 use winit::window::{WindowBuilder, WindowLevel};
 use winit_input_helper::WinitInputHelper;
 
@@ -124,7 +124,7 @@ fn main() -> Result<(), pixels::Error> {
         elements.into(),
     );
     let (width, height) = state.window_size();
-    let size = LogicalSize::new(width, height);
+    let size = PhysicalSize::new(width, height);
 
     let event_loop = EventLoop::new();
     let mut input = WinitInputHelper::new();
@@ -139,7 +139,8 @@ fn main() -> Result<(), pixels::Error> {
         .with_resizable(false)
         .with_active(false)
         .with_position(LogicalPosition::new(0, 0))
-        .with_name("systat", "$instance")
+        .with_name("tid", "tid")
+        .with_x11_window_type(vec![XWindowType::Dock])
         .build(&event_loop)
         .unwrap();
 
