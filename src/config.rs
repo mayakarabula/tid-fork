@@ -11,11 +11,11 @@ const CONFIG_FILE_PATH: &str = "/etc/tid/tid.config";
 const DEFAULT_FONT_DIR: &str = "/etc/tid/fonts";
 const DEFAULT_FONT: &str = "cream12.uf2";
 const DEFAULT_MPD_ADDR: &str = "127.0.0.1:6600";
+const DEFAULT_BACKGROUND: Pixel = [0x00; PIXEL_SIZE];
+const DEFAULT_FOREGROUND: Pixel = [0xff; PIXEL_SIZE];
 
 pub type Pixel = [u8; PIXEL_SIZE];
 pub const PIXEL_SIZE: usize = 4;
-const BACKGROUND: Pixel = [0x00; PIXEL_SIZE];
-const FOREGROUND: Pixel = [0xff; PIXEL_SIZE];
 const COLOR_PREFIX: &str = "0x";
 
 pub struct Config {
@@ -29,8 +29,8 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             font_path: PathBuf::from_iter([DEFAULT_FONT_DIR, DEFAULT_FONT]).into_boxed_path(),
-            foreground: FOREGROUND,
-            background: BACKGROUND,
+            foreground: DEFAULT_FOREGROUND,
+            background: DEFAULT_BACKGROUND,
             mpd_addr: SocketAddr::from_str(DEFAULT_MPD_ADDR)
                 .expect("DEFAULT_MPD_ADDR must be valid"),
         }
@@ -193,8 +193,8 @@ fn usage(bin: &str) {
     const BIN: &str = env!("CARGO_BIN_NAME");
     const AUTHORS: &str = env!("CARGO_PKG_AUTHORS");
     const VERSION: &str = env!("CARGO_PKG_VERSION");
-    const DEFAULT_FG: u32 = u32::from_be_bytes(FOREGROUND);
-    const DEFAULT_BG: u32 = u32::from_be_bytes(BACKGROUND);
+    const DEFAULT_FG: u32 = u32::from_be_bytes(DEFAULT_FOREGROUND);
+    const DEFAULT_BG: u32 = u32::from_be_bytes(DEFAULT_BACKGROUND);
     eprintln!("{DESCRIPTION}");
     eprintln!();
     eprintln!("Usage:");
