@@ -98,6 +98,10 @@ Options:
 ## weirdness
 
 
+## thanks
+
+Thanks to [Maya](https://mayaks.eu/) for testing and suggesting changes to allow _tid_ to run on MacOS.
+
 ---
 
-Thanks &lt;3 [ma3ke](https://dwangschematiek.nl)
+Made with &lt;3 [ma3ke](https://dwangschematiek.nl)
