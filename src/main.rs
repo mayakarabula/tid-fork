@@ -168,7 +168,10 @@ fn main() -> Result<(), pixels::Error> {
         let window_size = window.inner_size();
         let surface_texture = SurfaceTexture::new(window_size.width, window_size.height, &window);
         PixelsBuilder::new(width, height, surface_texture)
-            .clear_color(pixels::wgpu::Color::TRANSPARENT)
+            .clear_color({
+                let [r, g, b, a] = config.background.map(|v| v as f64 / 255.0);
+                pixels::wgpu::Color { r, g, b, a }
+            })
             .build()?
     };
 
