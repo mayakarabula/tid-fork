@@ -158,7 +158,14 @@ fn main() -> Result<(), pixels::Error> {
         elements.into(),
     );
     let (width, height) = state.window_size();
-    let size = PhysicalSize::new(width, height);
+    let size = {
+        let scale_factor = std::env::var("TID_SCALE_FACTOR")
+            .ok()
+            .map(|v| v.parse::<f64>().ok())
+            .flatten()
+            .unwrap_or(1.0).round() as u32;
+        PhysicalSize::new(width * scale_factor, height * scale_factor)
+    };
 
     let event_loop = EventLoop::new();
     let mut input = WinitInputHelper::new();
