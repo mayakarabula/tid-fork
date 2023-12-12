@@ -15,16 +15,14 @@ use winit::event::Event;
 use winit::event_loop::{ControlFlow, EventLoop};
 #[cfg(any(target_os = "linux", target_os = "freebsd", target_os = "openbsd"))]
 use winit::platform::x11::{WindowBuilderExtX11, XWindowType};
-
-#[cfg(target_os = "macos")]
-use winit::platform::macos::WindowExtMacOS;
-#[cfg(target_os = "macos")]
-use cocoa::appkit::{NSWindow, NSWindowCollectionBehavior};
-#[cfg(target_os = "macos")]
-use objc::runtime::{Object, objc_retain, objc_release};
-
 use winit::window::{Window, WindowBuilder, WindowLevel};
 use winit_input_helper::WinitInputHelper;
+#[cfg(target_os = "macos")]
+use {
+    cocoa::appkit::{NSWindow, NSWindowCollectionBehavior},
+    objc::runtime::{objc_release, objc_retain, Object},
+    winit::platform::macos::WindowExtMacOS,
+};
 
 const WINDOW_NAME: &str = env!("CARGO_BIN_NAME");
 
@@ -56,16 +54,23 @@ fn setup_window(
         .with_name(WINDOW_NAME, WINDOW_NAME)
         .with_x11_window_type(vec![XWindowType::Dock]);
 
-    builder.build(event_loop).unwrap()
+    let window = builder.build(event_loop).unwrap();
+    #[cfg(target_os = "macos")]
+    make_window_sticky_on_mac(&window);
+    window
 }
 
+#[cfg(target_os = "macos")]
 fn make_window_sticky_on_mac(window: &Window) {
     let mac_window = window as &dyn WindowExtMacOS;
     let ns_window_id = mac_window.ns_window();
+    // Safety: ns_window_id points to a valid NSWindow Object and is non-null.
     unsafe {
         let ns_window: *mut Object = std::mem::transmute(ns_window_id);
         objc_retain(ns_window);
-        ns_window.setCollectionBehavior_(NSWindowCollectionBehavior::NSWindowCollectionBehaviorCanJoinAllSpaces);
+        ns_window.setCollectionBehavior_(
+            NSWindowCollectionBehavior::NSWindowCollectionBehaviorCanJoinAllSpaces,
+        );
         objc_release(ns_window);
     }
 }
@@ -125,9 +130,6 @@ fn main() -> Result<(), pixels::Error> {
     let mut input = WinitInputHelper::new();
     let window = setup_window(size, config.position, &event_loop);
 
-    #[cfg(target_os = "macos")]
-    make_window_sticky_on_mac(&window);
-    
     let mut pixels = {
         let window_size = window.inner_size();
         let surface_texture = SurfaceTexture::new(window_size.width, window_size.height, &window);
