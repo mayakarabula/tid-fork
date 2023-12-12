@@ -16,6 +16,8 @@ psf2 = "0.4.0"
 sysinfo = "0.29.10"
 winit = "0.28.0"
 winit_input_helper = "0.14.0"
+cocoa = "0.25.0"
+objc = "0.2.7"
 
 [profile.release]
 strip = true
