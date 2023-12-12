@@ -62,7 +62,7 @@ Any part of a line beyond `#` is a comment and is ignored.
   Note that uf2 fonts require a `.uf2` extension to be accepted, while `psf2` can be recognized through its magic number.
 - **Want to change the color?** 
   You can set the foreground and background color by providing a `0x{r}{g}{b}{a}` formatted hex string as parameters after the `--fg` and `--bg` flags, respectively.
-  For example, 
+  For example,
 
   ```
   tid --fg 0xcc33aaff --bg 0xffffff00
@@ -97,6 +97,16 @@ Options:
     --version   -v    Display function.
     --help      -h    Display help.
 ```
+
+To set the scale factor manually, the `TID_SCALE_FACTOR` environment variable is available.
+For example, 
+
+```
+TID_SCALE_FACTOR=3 tid
+```
+
+would make each logical pixel that is rendered 3×3 display pixels in
+size.
 
 ## thanks
 
