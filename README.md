@@ -44,6 +44,7 @@ Any of the following keywords are recognized, followed by some form of whitespac
 Each setting is on a separate line.
 The arguments are interpreted in the same manner as the command line arguments.
 
+- `elements`
 - `font_name`
 - `font_path`
 - `foreground`
@@ -70,10 +71,23 @@ Any part of a line beyond `#` is a comment and is ignored.
 
   will set the foreground to a dark magenta and the background to white transparent, like [this](https://hachyderm.io/@ma3ke/111377402365783978).
   By default, the background is black and transparent (if supported), and the foreground white.
-- **Want to change the order and selection of items?**
-  There is no nice way to do this at this moment, beyond changing the source code.
-  For anybody who is somewhat familiar with editing source in any language, configuring this may be an interesting little challenge or more likely very easy.
-  Nonetheless, it is pretty likely that I will add some mechanism to do this in the future. The first stones have been placed now that there is a config file system.
+- **Want to change the order and selection of elements?**
+  You can :)
+  The elements can be specified through the command line arguments, or through the config file.
+  The format for the elements specification string is a space delimited list of any of the following items:
+
+  - _padding(`<width>`)_
+  - _space_
+  - _date_
+  - _time_
+  - _label(`<text>`)_
+  - _battery_
+  - _mem_
+  - _cpu_
+  - _cpugraph(`<width>`)_
+  - _playbackstate_
+
+  For an example, check the line in the [`config.tid`](/tid.config) file.
 
 ### full usage information
 
@@ -82,6 +96,14 @@ Usage:
     tid [OPTIONS]
 
 Options:
+    --elements        Define the elements to be displayed.
+                      This is a space-delimited list of any of the following
+                      items:
+                        - padding(<width>)       - space
+                        - date                   - time
+                        - label(<text>)          - battery
+                        - mem                    - cpu
+                        - cpugraph(<width>)      - playbackstate
     --font-name -n    Set the font name from the default directory.
                       (default: 'cream12.uf2' in '/etc/tid/fonts')
     --font-path -p    Set the font path.

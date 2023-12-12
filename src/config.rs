@@ -154,7 +154,16 @@ fn parse_args() -> Result<Args, lexopt::Error> {
     let mut parser = Parser::from_env();
     while let Some(arg) = parser.next()? {
         match arg {
-            // TODO: Add support for specifying elements on the command line interface.
+            Arg::Long("elements") => {
+                args.elements = Some(
+                    parser
+                        .value()?
+                        .string()?
+                        .split_whitespace()
+                        .map(|s| s.to_string())
+                        .collect(),
+                )
+            }
             Arg::Short('n') | Arg::Long("font-name") => {
                 args.font_path = Some(PathBuf::from_iter([
                     DEFAULT_FONT_DIR,
@@ -275,7 +284,14 @@ fn usage(bin: &str) {
     eprintln!("    {bin} [OPTIONS]");
     eprintln!();
     eprintln!("Options:");
-    // TODO: Add command line options for elements.
+    eprintln!("    --elements        Define the elements to be displayed.");
+    eprintln!("                      This is a space-delimited list of any of the following");
+    eprintln!("                      items:");
+    eprintln!("                        - padding(<width>)       - space");
+    eprintln!("                        - date                   - time");
+    eprintln!("                        - label(<text>)          - battery");
+    eprintln!("                        - mem                    - cpu");
+    eprintln!("                        - cpugraph(<width>)      - playbackstate");
     eprintln!("    --font-name -n    Set the font name from the default directory.");
     eprintln!("                      (default: '{DEFAULT_FONT}' in '{DEFAULT_FONT_DIR}')");
     eprintln!("    --font-path -p    Set the font path.");
