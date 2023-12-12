@@ -152,9 +152,9 @@ impl State {
             match element {
                 Element::Date(dt) | Element::Time(dt) => *dt = chrono::Local::now(),
                 Element::Mem(avl) => {
-                    let used = self.sys.used_memory();
-                    let available = self.sys.available_memory();
-                    *avl = used as f32 / available as f32 * 100.0;
+                    let used = self.sys.used_memory() as f32;
+                    let available = self.sys.total_memory() as f32;
+                    *avl = used / available * 100.0;
                 }
                 Element::Cpu(avg) => {
                     let cpus = self.sys.cpus();
