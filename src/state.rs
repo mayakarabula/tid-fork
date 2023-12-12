@@ -260,6 +260,8 @@ impl State {
                     *avl = used / available * 100.0;
                 }
                 Element::Cpu(avg) => {
+                    // FIXME: Sometimes on (at least) macOS, this returns NaN. This would crash the
+                    // program, so we have a NaN check when drawing the element.
                     let cpus = self.sys.cpus();
                     *avg = cpus.iter().map(|cpu| cpu.cpu_usage()).sum::<f32>() / cpus.len() as f32;
                 }
@@ -310,7 +312,11 @@ impl State {
                     format!("{:02}:{:02}:{:02}", dt.hour(), dt.minute(), dt.second()).draw(self)
                 }
                 Element::Mem(val) | Element::Cpu(val) | Element::Battery(val) => {
-                    format!("{val:>3.0}%").draw(self)
+                    if val.is_nan() {
+                        "---%".draw(self)
+                    } else {
+                        format!("{val:>3.0}%").draw(self)
+                    }
                 }
                 Element::CpuGraph(hist) => {
                     let height = self.window_size().1 as usize;
