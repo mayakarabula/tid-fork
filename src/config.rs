@@ -7,6 +7,8 @@ use std::str::FromStr;
 use lexopt::{Arg, Parser, ValueExt};
 use winit::dpi::LogicalPosition;
 
+use crate::state::Element;
+
 const CONFIG_FILE_PATH: &str = "/etc/tid/tid.config";
 
 const DEFAULT_FONT_DIR: &str = "/etc/tid/fonts";
@@ -20,6 +22,7 @@ pub const PIXEL_SIZE: usize = 4;
 const COLOR_PREFIX: &str = "0x";
 
 pub struct Config {
+    pub elements: Vec<Element>,
     pub font_path: Box<Path>,
     pub foreground: Pixel,
     pub background: Pixel,
@@ -30,6 +33,26 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
+            elements: vec![
+                Element::Padding(3),
+                Element::Date(Default::default()),
+                Element::Space,
+                Element::Time(Default::default()),
+                Element::Space,
+                Element::Label("bat".to_string()),
+                Element::Battery(Default::default()),
+                Element::Space,
+                Element::Label("mem".to_string()),
+                Element::Mem(Default::default()),
+                Element::Space,
+                Element::Label("cpu".to_string()),
+                Element::Cpu(Default::default()),
+                Element::Space,
+                Element::CpuGraph(Default::default()),
+                Element::Space,
+                Element::PlaybackState(Default::default()),
+                Element::Padding(3),
+            ],
             font_path: PathBuf::from_iter([DEFAULT_FONT_DIR, DEFAULT_FONT]).into_boxed_path(),
             foreground: DEFAULT_FOREGROUND,
             background: DEFAULT_BACKGROUND,

@@ -6,7 +6,7 @@ mod state;
 
 use battery::Manager;
 use config::configure;
-use state::{Element, History, State};
+use state::State;
 
 use pixels::{PixelsBuilder, SurfaceTexture};
 use sysinfo::{System, SystemExt};
@@ -62,27 +62,6 @@ fn main() -> Result<(), pixels::Error> {
     };
 
     let font = font::load_font(&config.font_path);
-
-    let padding_left = 3;
-    let elements = [
-        Element::Padding(padding_left),
-        Element::Date(Default::default()),
-        Element::Space,
-        Element::Time(Default::default()),
-        Element::Space,
-        Element::Label("bat".to_string()),
-        Element::Battery(Default::default()),
-        Element::Space,
-        Element::Label("mem".to_string()),
-        Element::Mem(Default::default()),
-        Element::Space,
-        Element::Label("cpu".to_string()),
-        Element::Cpu(Default::default()),
-        Element::Space,
-        Element::CpuGraph(History::new(120)),
-        Element::Space,
-        Element::PlaybackState(Default::default()),
-    ];
     let mut state = State::new(
         font,
         System::new(),
@@ -93,7 +72,7 @@ fn main() -> Result<(), pixels::Error> {
         mpd::Client::connect(config.mpd_addr).ok(),
         config.foreground,
         config.background,
-        elements.into(),
+        config.elements,
     );
 
     let event_loop = EventLoop::new();

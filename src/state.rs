@@ -78,6 +78,12 @@ impl<T: Default + Clone> History<T> {
     }
 }
 
+impl<T: Default + Clone> Default for History<T> {
+    fn default() -> Self {
+        Self::new(120)
+    }
+}
+
 impl<T> History<T> {
     fn push(&mut self, value: T) {
         let len = self.0.len();
