@@ -66,6 +66,7 @@ impl Default for Config {
 // TODO: Rename this to be more appropriate for the stage before config but not necessarily args.
 #[derive(Default)]
 struct Args {
+    pub elements: Option<Vec<String>>,
     pub font_path: Option<PathBuf>,
     pub foreground: Option<Pixel>,
     pub background: Option<Pixel>,
@@ -97,6 +98,15 @@ fn parse_config(config: &str) -> Result<Args, String> {
             .ok_or(String::from("expected argument after keyword"))?;
 
         match keyword {
+            "elements" => {
+                // TODO: Consider how this can be neater. The current method is to reform the
+                // arguments list from the single argument that is needed in most cases by putting
+                // it into a Vec and then extending it with the other tokens.
+                // My intention is to just have the arguments ready to go.
+                let mut arguments = vec![argument];
+                arguments.extend(tokens);
+                args.elements = Some(arguments.iter().map(|s| s.to_string()).collect())
+            }
             "font_name" => args.font_path = Some(PathBuf::from_iter([DEFAULT_FONT_DIR, argument])),
             "font_path" => {
                 args.font_path = Some(PathBuf::from_str(argument).map_err(|err| err.to_string())?)
@@ -144,6 +154,7 @@ fn parse_args() -> Result<Args, lexopt::Error> {
     let mut parser = Parser::from_env();
     while let Some(arg) = parser.next()? {
         match arg {
+            // TODO: Add support for specifying elements on the command line interface.
             Arg::Short('n') | Arg::Long("font-name") => {
                 args.font_path = Some(PathBuf::from_iter([
                     DEFAULT_FONT_DIR,
@@ -225,6 +236,12 @@ pub fn configure() -> Result<Config, Box<dyn std::error::Error>> {
     let mut config = Config::default();
     for args in [config_file_args, command_line_args].into_iter().flatten() {
         // TODO: I don't like this pattern, tbh.
+        if let Some(elements) = args.elements {
+            config.elements = elements
+                .iter()
+                .map(|elem| Element::from_str(elem))
+                .collect::<Result<_, _>>()?
+        }
         if let Some(font_path) = args.font_path {
             config.font_path = font_path.into_boxed_path()
         }
@@ -258,6 +275,7 @@ fn usage(bin: &str) {
     eprintln!("    {bin} [OPTIONS]");
     eprintln!();
     eprintln!("Options:");
+    // TODO: Add command line options for elements.
     eprintln!("    --font-name -n    Set the font name from the default directory.");
     eprintln!("                      (default: '{DEFAULT_FONT}' in '{DEFAULT_FONT_DIR}')");
     eprintln!("    --font-path -p    Set the font path.");

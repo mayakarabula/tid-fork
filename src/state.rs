@@ -1,4 +1,5 @@
 use std::collections::VecDeque;
+use std::str::FromStr;
 
 use battery::Battery;
 use chrono::{Datelike, Timelike};
@@ -122,6 +123,41 @@ pub enum Element {
     Battery(f32),
     CpuGraph(History<f32>),
     PlaybackState(mpd::State),
+}
+
+impl FromStr for Element {
+    type Err = String; // TODO: Implement proper error type.
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        // Some elements take a user-specifiable argument. We take care of these first.
+        if s.contains('(') && s.ends_with(')') {
+            let (name, argument) = s.split_once('(').unwrap();
+            let argument = argument.trim_end_matches(')');
+            let element = match name {
+                "padding" => {
+                    Self::Padding(argument.parse::<usize>().map_err(|err| err.to_string())?)
+                }
+                "label" => Self::Label(argument.to_string()),
+                "cpugraph" => Self::CpuGraph(History::new(
+                    argument.parse::<usize>().map_err(|err| err.to_string())?,
+                )),
+                weird => Err(format!("unknown argumented element name '{weird}'"))?,
+            };
+            return Ok(element);
+        }
+
+        let element = match s {
+            "space" => Self::Space,
+            "date" => Self::Date(Default::default()),
+            "time" => Self::Time(Default::default()),
+            "battery" => Self::Battery(Default::default()),
+            "mem" => Self::Mem(Default::default()),
+            "cpu" => Self::Cpu(Default::default()),
+            "playbackstate" => Self::PlaybackState(Default::default()),
+            weird => Err(format!("unknown element name '{weird}'"))?,
+        };
+        Ok(element)
+    }
 }
 
 impl Element {
