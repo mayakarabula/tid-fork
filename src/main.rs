@@ -157,17 +157,35 @@ fn main() -> Result<(), pixels::Error> {
         config.background,
         elements.into(),
     );
-    let (width, height) = state.window_size();
-    let size = {
-        let scale_factor = std::env::var("TID_SCALE_FACTOR")
-            .ok()
-            .map(|v| v.parse::<f64>().ok())
-            .flatten()
-            .unwrap_or(1.0).round() as u32;
-        PhysicalSize::new(width * scale_factor, height * scale_factor)
-    };
 
     let event_loop = EventLoop::new();
+
+    // In order to deal well with higher resolution displays, fractional scale factors (e.g., 1.67)
+    // are quantized to integers.
+    //
+    // We can get the scale factor from the window, but in order to create the window, we must
+    // first know the scale factor. To circumvent that circular mess, we can create a dummy window,
+    // read its scale factor, and use that to eventually set up our actual window. The dummy window
+    // is dropped immediately after its created.
+    // Note that this method relies on the assumption that both times we create a winit::Window, the
+    // monitor it picks (and its scale factor) will be the same.
+    //
+    // If the environment variable is not set, the scale factor is determined with the dummy window
+    // method.
+    let scale_factor = {
+        let env_scale_factor = std::env::var("TID_SCALE_FACTOR")
+            .ok()
+            .and_then(|v| v.parse::<f64>().ok().map(|f| u32::max(1, f.round() as u32)));
+        let wm_scale_factor = || {
+            let dummy = Window::new(&event_loop).unwrap();
+            dummy.scale_factor()
+        };
+        env_scale_factor.unwrap_or(wm_scale_factor().round() as u32)
+    };
+
+    let (width, height) = state.window_size();
+    let size = PhysicalSize::new(width * scale_factor, height * scale_factor);
+
     let mut input = WinitInputHelper::new();
     let window = setup_window(size, config.position, &event_loop);
 
