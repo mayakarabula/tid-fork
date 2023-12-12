@@ -5,8 +5,69 @@ use chrono::{Datelike, Timelike};
 use pixels::Pixels;
 use sysinfo::{CpuExt, System, SystemExt};
 
+use crate::config::{Pixel, PIXEL_SIZE};
 use crate::font::{Font, WrappedFont};
-use crate::{Block, Draw, Pixel};
+
+#[derive(Debug, Clone)]
+struct Block {
+    height: usize,
+    pixels: Vec<Pixel>,
+}
+
+impl Block {
+    fn width(&self) -> usize {
+        self.pixels.len() / self.height
+    }
+
+    fn rows(&self) -> std::slice::ChunksExact<'_, Pixel> {
+        self.pixels.chunks_exact(self.width())
+    }
+
+    fn draw_onto_pixels(self, pixels: &mut Pixels, start_x: usize) {
+        let size = pixels.texture().size();
+        for (y, row) in self.rows().enumerate() {
+            let idx = (y * size.width as usize + start_x) * PIXEL_SIZE;
+            let row_bytes = row.flatten();
+            pixels.frame_mut()[idx..idx + row_bytes.len()].copy_from_slice(row_bytes);
+        }
+    }
+}
+
+trait Draw {
+    fn draw(&self, state: &State) -> Block;
+}
+
+impl Draw for &str {
+    fn draw(&self, state: &State) -> Block {
+        let height = state.font.height();
+        let glyphs = self.chars().flat_map(|ch| state.font.glyph(ch));
+        let width: usize = glyphs.clone().map(|g| g.width()).sum();
+        let mut pixels = vec![state.background; height * width];
+        let mut x0 = 0;
+        for g in glyphs {
+            for (y, row) in g.rows().enumerate() {
+                for (xg, &cell) in row.iter().enumerate() {
+                    let x = x0 + xg;
+                    let idx = y * width + x;
+                    pixels[idx] = if cell {
+                        state.foreground
+                    } else {
+                        state.background
+                    };
+                }
+            }
+            x0 += g.width();
+        }
+
+        Block { height, pixels }
+    }
+}
+
+impl Draw for String {
+    fn draw(&self, state: &State) -> Block {
+        self.as_str().draw(state)
+    }
+}
 
 #[derive(Debug, Clone)]
 pub(crate) struct History<T>(VecDeque<T>);
