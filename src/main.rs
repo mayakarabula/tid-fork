@@ -237,8 +237,8 @@ fn main() -> Result<(), pixels::Error> {
             }
 
             // Resize the window.
-            if let Some(_size) = input.window_resized() {
-                eprintln!("bro we don't even do resizes here");
+            if let Some(size) = input.window_resized() {
+                eprintln!("INFO:  Ignoring resize request {size:?}");
             }
         }
     });
