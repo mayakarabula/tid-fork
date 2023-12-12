@@ -38,7 +38,7 @@ _tid_ can be configured through a `/etc/tid/tid.config` file and command line ar
 ### config file
 
 The config file must (as of now) be located at `/etc/tid/tid.config`.
-An [example file](/tid.config) is provided in the repository.
+An [example file](https://git.sr.ht/~ma3ke/tid/tree/main/item/tid.config) is provided in the repository.
 
 Any of the following keywords are recognized, followed by some form of whitespace and an appropriate argument.
 Each setting is on a separate line.
@@ -87,7 +87,7 @@ Any part of a line beyond `#` is a comment and is ignored.
   - _cpugraph(`<width>`)_
   - _playbackstate_
 
-  For an example, check the line in the [`config.tid`](/tid.config) file.
+  For an example, check the line in the [`config.tid`](https://git.sr.ht/~ma3ke/tid/tree/main/item/tid.config) file.
 
 ### full usage information
 
