@@ -93,40 +93,36 @@ fn parse_config(config: &str) -> Result<Args, String> {
     {
         let mut tokens = line.split_whitespace();
         let keyword = tokens.next().ok_or(String::from("expected keyword"))?;
-        let argument = tokens
-            .next()
+        let arguments: Vec<_> = tokens.collect();
+        let first_argument = arguments
+            .first()
             .ok_or(String::from("expected argument after keyword"))?;
 
         match keyword {
-            "elements" => {
-                // TODO: Consider how this can be neater. The current method is to reform the
-                // arguments list from the single argument that is needed in most cases by putting
-                // it into a Vec and then extending it with the other tokens.
-                // My intention is to just have the arguments ready to go.
-                let mut arguments = vec![argument];
-                arguments.extend(tokens);
-                args.elements = Some(arguments.iter().map(|s| s.to_string()).collect())
+            "elements" => args.elements = Some(arguments.iter().map(|s| s.to_string()).collect()),
+            "font_name" => {
+                args.font_path = Some(PathBuf::from_iter([DEFAULT_FONT_DIR, first_argument]))
             }
-            "font_name" => args.font_path = Some(PathBuf::from_iter([DEFAULT_FONT_DIR, argument])),
             "font_path" => {
-                args.font_path = Some(PathBuf::from_str(argument).map_err(|err| err.to_string())?)
+                args.font_path =
+                    Some(PathBuf::from_str(first_argument).map_err(|err| err.to_string())?)
             }
             "foreground" => {
-                let stripped = argument.strip_prefix(COLOR_PREFIX).ok_or(format!(
+                let stripped = first_argument.strip_prefix(COLOR_PREFIX).ok_or(format!(
                     "color values must be prefixed with '{COLOR_PREFIX}'"
                 ))?;
                 let num = u32::from_str_radix(stripped, 16).map_err(|e| e.to_string())?;
                 args.foreground = Some(num.to_be_bytes());
             }
             "background" => {
-                let stripped = argument.strip_prefix(COLOR_PREFIX).ok_or(format!(
+                let stripped = first_argument.strip_prefix(COLOR_PREFIX).ok_or(format!(
                     "color values must be prefixed with '{COLOR_PREFIX}'"
                 ))?;
                 let num = u32::from_str_radix(stripped, 16).map_err(|e| e.to_string())?;
                 args.background = Some(num.to_be_bytes());
             }
             "position" => {
-                let (x, y) = argument.split_once(',').ok_or(
+                let (x, y) = first_argument.split_once(',').ok_or(
                     "position must be formatted as 'x,y' (no space!)\
                     where x and y are positive integers",
                 )?;
@@ -139,7 +135,8 @@ fn parse_config(config: &str) -> Result<Args, String> {
                 args.position = Some((x, y));
             }
             "mpd_addr" => {
-                args.mpd_addr = Some(SocketAddr::from_str(argument).map_err(|err| err.to_string())?)
+                args.mpd_addr =
+                    Some(SocketAddr::from_str(first_argument).map_err(|err| err.to_string())?)
             }
             unknown => return Err(format!("unknown keyword '{unknown}'")),
         }
