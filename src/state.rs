@@ -9,6 +9,8 @@ use sysinfo::{CpuExt, System, SystemExt};
 use crate::config::{Pixel, PIXEL_SIZE};
 use crate::font::{Font, WrappedFont};
 
+const BATTERY_FULL_PERCENTAGE : f32 = 98.0;
+
 #[derive(Debug, Clone)]
 struct Block {
     height: usize,
@@ -298,6 +300,10 @@ impl State {
                         *full = bat
                             .state_of_charge()
                             .get::<battery::units::ratio::percent>();
+                        // If the battery is basically full, just set it to 100%.
+                        if *full > BATTERY_FULL_PERCENTAGE {
+                            *full = 100.0
+                        }
                     }
                 }
                 Element::CpuGraph(hist) => {
