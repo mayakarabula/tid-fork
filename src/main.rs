@@ -92,7 +92,7 @@ fn main() -> Result<(), pixels::Error> {
         Err(err) => {
             eprintln!("ERROR: Failed to load font from {font_path:?}: {err}");
             std::process::exit(1);
-        },
+        }
     };
     let mut state = State::new(
         font,

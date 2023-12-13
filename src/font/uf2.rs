@@ -94,6 +94,9 @@ impl<'t> Glyph<'t> {
     }
 }
 
+type Widths = [u8; 256];
+type Glyphs = [u8; 8192];
+
 /// A uf2 font.
 ///
 /// Details can be found on
@@ -102,8 +105,8 @@ impl<'t> Glyph<'t> {
 #[derive(Debug, Clone)]
 #[repr(C)]
 pub struct Font {
-    widths: [u8; 256],
-    glyphs: [u8; 8192],
+    widths: Widths,
+    glyphs: Glyphs,
 }
 
 impl Font {
@@ -135,9 +138,21 @@ impl Font {
 }
 
 impl Font {
-    pub const fn from_uf2(bytes: &[u8; FILE_SIZE]) -> Self {
-        // TODO: This is terrible I think kindoff I don't know I think I am going to rewrite the
-        // whole font system anyways at some point.
-        unsafe { std::mem::transmute(*bytes) }
+    pub fn from_uf2(bytes: &[u8; FILE_SIZE]) -> Self {
+        let (widths, glyphs) = bytes.split_at(std::mem::size_of::<Widths>());
+        Self {
+            widths: widths.try_into().unwrap(),
+            glyphs: glyphs.try_into().unwrap(),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn correct_font_size() {
+        assert_eq!(std::mem::size_of::<Font>(), FILE_SIZE);
     }
 }
