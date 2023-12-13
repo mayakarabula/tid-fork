@@ -74,7 +74,26 @@ struct Args {
     pub mpd_addr: Option<SocketAddr>,
 }
 
-// TODO: Implement proper error type.
+fn parse_color(hex: &str) -> Result<u32, String> {
+    let stripped = hex.strip_prefix(COLOR_PREFIX).ok_or(format!(
+        "color values must be prefixed with '{COLOR_PREFIX}'"
+    ))?;
+    u32::from_str_radix(stripped, 16).map_err(|e| e.to_string())
+}
+
+fn parse_position(pos: &str) -> Result<(u32, u32), String> {
+    let (x, y) = pos.split_once(',').ok_or(
+        "position must be formatted as 'x,y' (no space!) where x and y are unsigned integers",
+    )?;
+    let x: u32 = x
+        .parse()
+        .map_err(|err| format!("error while parsing x value in position: {err}"))?;
+    let y: u32 = y
+        .parse()
+        .map_err(|err| format!("error while parsing y value in position: {err}"))?;
+    Ok((x, y))
+}
+
 fn parse_config(config: &str) -> Result<Args, String> {
     let mut args = Args::default();
 
@@ -103,41 +122,15 @@ fn parse_config(config: &str) -> Result<Args, String> {
             "font_name" => {
                 args.font_path = Some(PathBuf::from_iter([DEFAULT_FONT_DIR, first_argument]))
             }
-            "font_path" => {
-                args.font_path =
-                    Some(PathBuf::from_str(first_argument).map_err(|err| err.to_string())?)
-            }
-            "foreground" => {
-                let stripped = first_argument.strip_prefix(COLOR_PREFIX).ok_or(format!(
-                    "color values must be prefixed with '{COLOR_PREFIX}'"
-                ))?;
-                let num = u32::from_str_radix(stripped, 16).map_err(|e| e.to_string())?;
-                args.foreground = Some(num.to_be_bytes());
-            }
-            "background" => {
-                let stripped = first_argument.strip_prefix(COLOR_PREFIX).ok_or(format!(
-                    "color values must be prefixed with '{COLOR_PREFIX}'"
-                ))?;
-                let num = u32::from_str_radix(stripped, 16).map_err(|e| e.to_string())?;
-                args.background = Some(num.to_be_bytes());
-            }
-            "position" => {
-                let (x, y) = first_argument.split_once(',').ok_or(
-                    "position must be formatted as 'x,y' (no space!)\
-                    where x and y are positive integers",
-                )?;
-                let x: u32 = x
-                    .parse()
-                    .map_err(|err| format!("error while parsing x value in position: {err}"))?;
-                let y: u32 = y
-                    .parse()
-                    .map_err(|err| format!("error while parsing y value in position: {err}"))?;
-                args.position = Some((x, y));
-            }
+            "font_path" => args.font_path = Some(PathBuf::from(first_argument)),
+            "foreground" => args.foreground = Some(parse_color(first_argument)?.to_be_bytes()),
+            "background" => args.background = Some(parse_color(first_argument)?.to_be_bytes()),
+            "position" => args.position = Some(parse_position(first_argument)?),
             "mpd_addr" => {
                 args.mpd_addr =
                     Some(SocketAddr::from_str(first_argument).map_err(|err| err.to_string())?)
             }
+
             unknown => return Err(format!("unknown keyword '{unknown}'")),
         }
     }
@@ -172,33 +165,15 @@ fn parse_args() -> Result<Args, lexopt::Error> {
             }
             Arg::Long("fg") => {
                 let hex = parser.value()?.string()?;
-                let stripped = hex.trim().strip_prefix(COLOR_PREFIX).ok_or_else(|| {
-                    format!("color values must be prefixed with '{COLOR_PREFIX}'")
-                })?;
-                let num = u32::from_str_radix(stripped, 16).map_err(|e| e.to_string())?;
-                args.foreground = Some(num.to_be_bytes());
+                args.foreground = Some(parse_color(&hex)?.to_be_bytes());
             }
             Arg::Long("bg") => {
                 let hex = parser.value()?.string()?;
-                let stripped = hex.trim().strip_prefix(COLOR_PREFIX).ok_or_else(|| {
-                    format!("color values must be prefixed with '{COLOR_PREFIX}'")
-                })?;
-                let num = u32::from_str_radix(stripped, 16).map_err(|e| e.to_string())?;
-                args.background = Some(num.to_be_bytes());
+                args.background = Some(parse_color(&hex)?.to_be_bytes());
             }
             Arg::Long("position") => {
                 let argument = parser.value()?.string()?;
-                let (x, y) = argument.split_once(',').ok_or(
-                    "position must be formatted as 'x,y' (no space!)\
-                    where x and y are positive integers",
-                )?;
-                let x: u32 = x
-                    .parse()
-                    .map_err(|err| format!("error while parsing x value in position: {err}"))?;
-                let y: u32 = y
-                    .parse()
-                    .map_err(|err| format!("error while parsing y value in position: {err}"))?;
-                args.position = Some((x, y));
+                args.position = Some(parse_position(&argument)?);
             }
             Arg::Long("mpd-address") => {
                 args.mpd_addr = Some(
