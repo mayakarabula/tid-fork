@@ -372,7 +372,6 @@ impl State {
                     Block { height, pixels }
                 }
                 Element::PlaybackState(state) => {
-                    // FIXME: I think draw should just be able to take a &str, not a string per se?
                     playback_state_symbol(*state).draw(self)
                 }
             };
