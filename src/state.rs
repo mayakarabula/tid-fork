@@ -9,7 +9,7 @@ use sysinfo::{CpuExt, System, SystemExt};
 use crate::config::{Pixel, PIXEL_SIZE};
 use crate::font::{Font, WrappedFont};
 
-const BATTERY_FULL_PERCENTAGE : f32 = 98.0;
+const BATTERY_FULL_PERCENTAGE: f32 = 98.0;
 
 #[derive(Debug, Clone)]
 struct Block {
@@ -371,9 +371,7 @@ impl State {
 
                     Block { height, pixels }
                 }
-                Element::PlaybackState(state) => {
-                    playback_state_symbol(*state).draw(self)
-                }
+                Element::PlaybackState(state) => playback_state_symbol(*state).draw(self),
             };
 
             // We want to align some elements like cpu and memory percentages to the right, since
