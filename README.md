@@ -11,6 +11,8 @@ I am enjoying it a lot and it fits my needs.
 
 ## installation
 
+### From source
+
 ```
 git clone https://git.sr.ht/~ma3ke/tid
 cd tid
@@ -21,6 +23,12 @@ sudo cp tid.config /etc/tid
 ```
 
 (I may put these operations into a makefile or shell script at some point, but it's quite trivial.)
+
+### AUR
+
+The [`tid`](https://aur.archlinux.org/packages/tid) package is available on the AUR!
+
+(Feel free to package _tid_ for other package managers :)
 
 ## what it does
 
