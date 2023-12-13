@@ -63,15 +63,40 @@ impl Default for Config {
     }
 }
 
-// TODO: Rename this to be more appropriate for the stage before config but not necessarily args.
 #[derive(Default)]
-struct Args {
+struct ConfigBuilder {
     pub elements: Option<Vec<String>>,
     pub font_path: Option<PathBuf>,
     pub foreground: Option<Pixel>,
     pub background: Option<Pixel>,
     pub position: Option<(u32, u32)>,
     pub mpd_addr: Option<SocketAddr>,
+}
+
+impl ConfigBuilder {
+    fn set_elements(&mut self, elements: impl Iterator<Item = String>) {
+        self.elements = Some(elements.collect());
+    }
+
+    fn set_font_path(&mut self, font_path: PathBuf) {
+        self.font_path = Some(font_path);
+    }
+
+    fn set_foreground(&mut self, foreground: Pixel) {
+        self.foreground = Some(foreground);
+    }
+
+    fn set_background(&mut self, background: Pixel) {
+        self.background = Some(background);
+    }
+
+    fn set_position(&mut self, position: (u32, u32)) {
+        self.position = Some(position);
+    }
+
+    fn set_mpd_addr(&mut self, mpd_addr: SocketAddr) {
+        self.mpd_addr = Some(mpd_addr);
+    }
 }
 
 fn parse_color(hex: &str) -> Result<u32, String> {
@@ -94,8 +119,8 @@ fn parse_position(pos: &str) -> Result<(u32, u32), String> {
     Ok((x, y))
 }
 
-fn parse_config(config: &str) -> Result<Args, String> {
-    let mut args = Args::default();
+fn parse_config(config: &str) -> Result<ConfigBuilder, String> {
+    let mut args = ConfigBuilder::default();
 
     // Go through each line, stripping of comments, trimming each line, and skipping empty lines.
     for line in config
@@ -120,18 +145,16 @@ fn parse_config(config: &str) -> Result<Args, String> {
             .ok_or(String::from("expected argument after keyword"))?;
 
         match keyword {
-            "elements" => args.elements = Some(arguments.iter().map(|s| s.to_string()).collect()),
+            "elements" => args.set_elements(arguments.iter().map(|s| s.to_string())),
             "font_name" => {
-                args.font_path = Some(PathBuf::from_iter([DEFAULT_FONT_DIR, first_argument]))
+                args.set_font_path(PathBuf::from_iter([DEFAULT_FONT_DIR, first_argument]))
             }
-            "font_path" => args.font_path = Some(PathBuf::from(first_argument)),
-            "foreground" => args.foreground = Some(parse_color(first_argument)?.to_be_bytes()),
-            "background" => args.background = Some(parse_color(first_argument)?.to_be_bytes()),
-            "position" => args.position = Some(parse_position(first_argument)?),
-            "mpd_addr" => {
-                args.mpd_addr =
-                    Some(SocketAddr::from_str(first_argument).map_err(|err| err.to_string())?)
-            }
+            "font_path" => args.set_font_path(PathBuf::from(first_argument)),
+            "foreground" => args.set_foreground(parse_color(first_argument)?.to_be_bytes()),
+            "background" => args.set_background(parse_color(first_argument)?.to_be_bytes()),
+            "position" => args.set_position(parse_position(first_argument)?),
+            "mpd_addr" => args
+                .set_mpd_addr(SocketAddr::from_str(first_argument).map_err(|err| err.to_string())?),
 
             unknown => return Err(format!("unknown keyword '{unknown}'")),
         }
@@ -140,43 +163,39 @@ fn parse_config(config: &str) -> Result<Args, String> {
     Ok(args)
 }
 
-fn parse_args() -> Result<Args, lexopt::Error> {
-    let mut args = Args::default();
+fn parse_args() -> Result<ConfigBuilder, lexopt::Error> {
+    let mut args = ConfigBuilder::default();
 
     let mut parser = Parser::from_env();
     while let Some(arg) = parser.next()? {
         match arg {
             Arg::Long("elements") => {
                 let elems = parser.value()?.string()?;
-                args.elements = Some(elems.split_whitespace().map(|s| s.to_string()).collect())
+                args.set_elements(elems.split_whitespace().map(|s| s.to_string()))
             }
-            Arg::Short('n') | Arg::Long("font-name") => {
-                args.font_path = Some(PathBuf::from_iter([
-                    DEFAULT_FONT_DIR,
-                    &parser.value()?.string()?,
-                ]))
-            }
+            Arg::Short('n') | Arg::Long("font-name") => args.set_font_path(PathBuf::from_iter([
+                DEFAULT_FONT_DIR,
+                &parser.value()?.string()?,
+            ])),
             Arg::Short('p') | Arg::Long("font-path") => {
-                args.font_path = Some(PathBuf::from(parser.value()?))
+                args.set_font_path(PathBuf::from(parser.value()?))
             }
             Arg::Long("fg") => {
                 let hex = parser.value()?.string()?;
-                args.foreground = Some(parse_color(&hex)?.to_be_bytes());
+                args.set_foreground(parse_color(&hex)?.to_be_bytes());
             }
             Arg::Long("bg") => {
                 let hex = parser.value()?.string()?;
-                args.background = Some(parse_color(&hex)?.to_be_bytes());
+                args.set_background(parse_color(&hex)?.to_be_bytes());
             }
             Arg::Long("position") => {
                 let argument = parser.value()?.string()?;
-                args.position = Some(parse_position(&argument)?);
+                args.set_position(parse_position(&argument)?);
             }
-            Arg::Long("mpd-address") => {
-                args.mpd_addr = Some(
-                    SocketAddr::from_str(&parser.value()?.string()?)
-                        .map_err(|err| lexopt::Error::Custom(Box::new(err)))?,
-                )
-            }
+            Arg::Long("mpd-address") => args.set_mpd_addr(
+                SocketAddr::from_str(&parser.value()?.string()?)
+                    .map_err(|err| lexopt::Error::Custom(Box::new(err)))?,
+            ),
             Arg::Short('v') | Arg::Long("version") => {
                 println!("{}", env!("CARGO_PKG_VERSION"));
                 std::process::exit(0);
