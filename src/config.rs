@@ -204,15 +204,17 @@ pub fn configure() -> Result<Config, Box<dyn std::error::Error>> {
         Ok(mut config_file) => {
             let mut config_str = String::new();
             config_file.read_to_string(&mut config_str)?;
-            Some(parse_config(&config_str)?)
+            Some(parse_config(&config_str).map_err(|err| {
+                format!("problem parsing config file {config_file_path:?}: {err}")
+            })?)
         }
         Err(err) => {
-            eprintln!("ERROR: problem reading '{config_file_path:?}': {err}");
-            eprintln!("INFO:  '{config_file_path:?}' not found");
+            eprintln!("ERROR: problem reading {config_file_path:?}: {err}");
             None
         }
     };
-    let command_line_args = Some(parse_args()?);
+    let command_line_args =
+        Some(parse_args().map_err(|err| format!("problem reading command line arguments: {err}"))?);
 
     let mut config = Config::default();
     for args in [config_file_args, command_line_args].into_iter().flatten() {
