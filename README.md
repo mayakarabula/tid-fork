@@ -95,7 +95,7 @@ Any part of a line beyond `#` is a comment and is ignored.
   - _cpugraph(`<width>`)_
   - _playbackstate_
 
-  For an example, check the line in the [`config.tid`](https://git.sr.ht/~ma3ke/tid/tree/main/item/tid.config) file.
+  For an example, check the line in the [`tid.config`](https://git.sr.ht/~ma3ke/tid/tree/main/item/tid.config) file.
 
 ### full usage information
 
@@ -140,17 +140,9 @@ size.
 
 ## contributing
 
-If you would like to submit changes, but feel intimidated by doing it by email, that is no problem at all!
+_**NOTE:** If you would like to submit changes, but feel intimidated by doing it by email, that is no problem at all!
 Another fine way is to fork the repository elsewhere, push your changes to there, and send me the link to the commit you want me to consider.
-
-Or, just get in touch with a DM or email :)
-
-<details>
-<summary>
-<h3>by email</h3>
-</summary>
-
-If you don't know how this works, but want to learn about this, [git-send-email.io](https://git-send-email.io/) is a fantastic hands-on resource.
+Or, just get in touch with a DM or email :)_
 
 Patches can be submitted to `~ma3ke/public-inbox@lists.sr.ht`.
 The archives can be found at [lists.sr.ht/~ma3ke/public-inbox](https://lists.sr.ht/~ma3ke/public-inbox).
@@ -160,7 +152,8 @@ When submitting a patch via email, please set the subject prefix to `PATCH tid`,
 ```
 git config format.subjectPrefix "PATCH tid"
 ```
-</details>
+
+(If you don't know how this stuff works, but want to learn about this, [git-send-email.io](https://git-send-email.io/) is a fantastic hands-on resource.)
 
 ## thanks
 
