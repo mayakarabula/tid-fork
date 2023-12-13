@@ -147,14 +147,8 @@ fn parse_args() -> Result<Args, lexopt::Error> {
     while let Some(arg) = parser.next()? {
         match arg {
             Arg::Long("elements") => {
-                args.elements = Some(
-                    parser
-                        .value()?
-                        .string()?
-                        .split_whitespace()
-                        .map(|s| s.to_string())
-                        .collect(),
-                )
+                let elems = parser.value()?.string()?;
+                args.elements = Some(elems.split_whitespace().map(|s| s.to_string()).collect())
             }
             Arg::Short('n') | Arg::Long("font-name") => {
                 args.font_path = Some(PathBuf::from_iter([
