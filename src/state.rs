@@ -241,8 +241,6 @@ pub struct State {
 }
 
 impl State {
-    // TODO: I think a builder pattern would be nicer here, especially since that makes for nice
-    // defaults.
     pub fn new(
         font: WrappedFont,
         sys: System,
