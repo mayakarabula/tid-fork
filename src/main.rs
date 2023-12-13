@@ -55,7 +55,7 @@ fn setup_window(
         .with_name(WINDOW_NAME, WINDOW_NAME)
         .with_x11_window_type(vec![XWindowType::Dock]);
 
-    let window = builder.build(event_loop).unwrap();
+    let window = builder.build(event_loop).expect("could not build window");
     #[cfg(target_os = "macos")]
     make_window_sticky_on_mac(&window);
     window
@@ -115,11 +115,19 @@ fn main() -> Result<(), pixels::Error> {
     // If the environment variable is not set, the scale factor is determined with the dummy window
     // method.
     let scale_factor = {
+        const DEFAULT_SCALE_FACTOR: f64 = 1.0;
         let env_scale_factor = std::env::var("TID_SCALE_FACTOR")
             .ok()
             .and_then(|v| v.parse::<f64>().ok().map(|f| u32::max(1, f.round() as u32)));
         let wm_scale_factor = || {
-            let dummy = Window::new(&event_loop).unwrap();
+            let Ok(dummy) = Window::new(&event_loop) else {
+                eprintln!(
+                    "INFO:  Could not construct dummy window to measure scale factor,\
+                    assuming a factor of {DEFAULT_SCALE_FACTOR}"
+                );
+                return DEFAULT_SCALE_FACTOR;
+            };
+
             dummy.scale_factor()
         };
         env_scale_factor.unwrap_or(wm_scale_factor().round() as u32)
