@@ -120,7 +120,7 @@ fn parse_position(pos: &str) -> Result<(u32, u32), String> {
 }
 
 fn parse_config(config: &str) -> Result<ConfigBuilder, String> {
-    let mut args = ConfigBuilder::default();
+    let mut cfg = ConfigBuilder::default();
 
     // Go through each line, stripping of comments, trimming each line, and skipping empty lines.
     for line in config
@@ -145,54 +145,54 @@ fn parse_config(config: &str) -> Result<ConfigBuilder, String> {
             .ok_or(String::from("expected argument after keyword"))?;
 
         match keyword {
-            "elements" => args.set_elements(arguments.iter().map(|s| s.to_string())),
+            "elements" => cfg.set_elements(arguments.iter().map(|s| s.to_string())),
             "font_name" => {
-                args.set_font_path(PathBuf::from_iter([DEFAULT_FONT_DIR, first_argument]))
+                cfg.set_font_path(PathBuf::from_iter([DEFAULT_FONT_DIR, first_argument]))
             }
-            "font_path" => args.set_font_path(PathBuf::from(first_argument)),
-            "foreground" => args.set_foreground(parse_color(first_argument)?.to_be_bytes()),
-            "background" => args.set_background(parse_color(first_argument)?.to_be_bytes()),
-            "position" => args.set_position(parse_position(first_argument)?),
-            "mpd_addr" => args
+            "font_path" => cfg.set_font_path(PathBuf::from(first_argument)),
+            "foreground" => cfg.set_foreground(parse_color(first_argument)?.to_be_bytes()),
+            "background" => cfg.set_background(parse_color(first_argument)?.to_be_bytes()),
+            "position" => cfg.set_position(parse_position(first_argument)?),
+            "mpd_addr" => cfg
                 .set_mpd_addr(SocketAddr::from_str(first_argument).map_err(|err| err.to_string())?),
 
             unknown => return Err(format!("unknown keyword '{unknown}'")),
         }
     }
 
-    Ok(args)
+    Ok(cfg)
 }
 
 fn parse_args() -> Result<ConfigBuilder, lexopt::Error> {
-    let mut args = ConfigBuilder::default();
+    let mut cfg = ConfigBuilder::default();
 
     let mut parser = Parser::from_env();
     while let Some(arg) = parser.next()? {
         match arg {
             Arg::Long("elements") => {
                 let elems = parser.value()?.string()?;
-                args.set_elements(elems.split_whitespace().map(|s| s.to_string()))
+                cfg.set_elements(elems.split_whitespace().map(|s| s.to_string()))
             }
-            Arg::Short('n') | Arg::Long("font-name") => args.set_font_path(PathBuf::from_iter([
+            Arg::Short('n') | Arg::Long("font-name") => cfg.set_font_path(PathBuf::from_iter([
                 DEFAULT_FONT_DIR,
                 &parser.value()?.string()?,
             ])),
             Arg::Short('p') | Arg::Long("font-path") => {
-                args.set_font_path(PathBuf::from(parser.value()?))
+                cfg.set_font_path(PathBuf::from(parser.value()?))
             }
             Arg::Long("fg") => {
                 let hex = parser.value()?.string()?;
-                args.set_foreground(parse_color(&hex)?.to_be_bytes());
+                cfg.set_foreground(parse_color(&hex)?.to_be_bytes());
             }
             Arg::Long("bg") => {
                 let hex = parser.value()?.string()?;
-                args.set_background(parse_color(&hex)?.to_be_bytes());
+                cfg.set_background(parse_color(&hex)?.to_be_bytes());
             }
             Arg::Long("position") => {
                 let argument = parser.value()?.string()?;
-                args.set_position(parse_position(&argument)?);
+                cfg.set_position(parse_position(&argument)?);
             }
-            Arg::Long("mpd-address") => args.set_mpd_addr(
+            Arg::Long("mpd-address") => cfg.set_mpd_addr(
                 SocketAddr::from_str(&parser.value()?.string()?)
                     .map_err(|err| lexopt::Error::Custom(Box::new(err)))?,
             ),
@@ -208,14 +208,14 @@ fn parse_args() -> Result<ConfigBuilder, lexopt::Error> {
         }
     }
 
-    Ok(args)
+    Ok(cfg)
 }
 
 /// Create a configuration based on defaults, followed by config files, and finally command line
 /// arguments.
 pub fn configure() -> Result<Config, Box<dyn std::error::Error>> {
     let config_file_path = PathBuf::from_str(CONFIG_FILE_PATH)?;
-    let config_file_args = match File::open(&config_file_path) {
+    let config_file_cfg = match File::open(&config_file_path) {
         Ok(mut config_file) => {
             let mut config_str = String::new();
             config_file.read_to_string(&mut config_str)?;
@@ -228,32 +228,32 @@ pub fn configure() -> Result<Config, Box<dyn std::error::Error>> {
             None
         }
     };
-    let command_line_args =
+    let command_line_cfg =
         Some(parse_args().map_err(|err| format!("problem reading command line arguments: {err}"))?);
 
     let mut config = Config::default();
-    for args in [config_file_args, command_line_args].into_iter().flatten() {
+    for cfg in [config_file_cfg, command_line_cfg].into_iter().flatten() {
         // TODO: I don't like this pattern, tbh.
-        if let Some(elements) = args.elements {
+        if let Some(elements) = cfg.elements {
             config.elements = elements
                 .iter()
                 .map(|elem| Element::from_str(elem))
                 .collect::<Result<_, _>>()
                 .map_err(|err| format!("problem encountered while parsing elements: {err}"))?
         }
-        if let Some(font_path) = args.font_path {
+        if let Some(font_path) = cfg.font_path {
             config.font_path = font_path.into_boxed_path()
         }
-        if let Some(foreground) = args.foreground {
+        if let Some(foreground) = cfg.foreground {
             config.foreground = foreground
         }
-        if let Some(background) = args.background {
+        if let Some(background) = cfg.background {
             config.background = background
         }
-        if let Some(position) = args.position {
+        if let Some(position) = cfg.position {
             config.position = LogicalPosition::from(position)
         }
-        if let Some(mpd_addr) = args.mpd_addr {
+        if let Some(mpd_addr) = cfg.mpd_addr {
             config.mpd_addr = mpd_addr
         }
     }
