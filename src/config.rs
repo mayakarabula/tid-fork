@@ -111,7 +111,9 @@ fn parse_config(config: &str) -> Result<Args, String> {
         .filter(|ln| !ln.is_empty())
     {
         let mut tokens = line.split_whitespace();
-        let keyword = tokens.next().ok_or(String::from("expected keyword"))?;
+        // This unwrap is safe since we filter out lines that are empty after trimming whitespace.
+        // Lines without at least a keyword can never reach this point.
+        let keyword = tokens.next().unwrap();
         let arguments: Vec<_> = tokens.collect();
         let first_argument = arguments
             .first()
