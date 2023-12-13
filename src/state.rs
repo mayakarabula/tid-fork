@@ -125,8 +125,37 @@ pub enum Element {
     PlaybackState(mpd::State),
 }
 
+#[derive(Debug)]
+pub enum ElementParseError {
+    BadInteger(std::num::ParseIntError),
+    UnknownElementName(String),
+    UnknownArgumentedElementName(String),
+}
+
+impl std::fmt::Display for ElementParseError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ElementParseError::BadInteger(e) => e.fmt(f),
+            ElementParseError::UnknownElementName(weird) => {
+                write!(f, "unknown element name '{weird}'")
+            }
+            ElementParseError::UnknownArgumentedElementName(weird) => {
+                write!(f, "unknown argumented element name '{weird}'")
+            }
+        }
+    }
+}
+
+impl std::error::Error for ElementParseError {}
+
+impl From<std::num::ParseIntError> for ElementParseError {
+    fn from(value: std::num::ParseIntError) -> Self {
+        Self::BadInteger(value)
+    }
+}
+
 impl FromStr for Element {
-    type Err = String; // TODO: Implement proper error type.
+    type Err = ElementParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         // Some elements take a user-specifiable argument. We take care of these first.
@@ -134,14 +163,12 @@ impl FromStr for Element {
             let (name, argument) = s.split_once('(').unwrap();
             let argument = argument.trim_end_matches(')');
             let element = match name {
-                "padding" => {
-                    Self::Padding(argument.parse::<usize>().map_err(|err| err.to_string())?)
-                }
+                "padding" => Self::Padding(argument.parse::<usize>()?),
                 "label" => Self::Label(argument.to_string()),
-                "cpugraph" => Self::CpuGraph(History::new(
-                    argument.parse::<usize>().map_err(|err| err.to_string())?,
-                )),
-                weird => Err(format!("unknown argumented element name '{weird}'"))?,
+                "cpugraph" => Self::CpuGraph(History::new(argument.parse::<usize>()?)),
+                weird => Err(ElementParseError::UnknownArgumentedElementName(
+                    weird.to_string(),
+                ))?,
             };
             return Ok(element);
         }
@@ -154,7 +181,7 @@ impl FromStr for Element {
             "mem" => Self::Mem(Default::default()),
             "cpu" => Self::Cpu(Default::default()),
             "playbackstate" => Self::PlaybackState(Default::default()),
-            weird => Err(format!("unknown element name '{weird}'"))?,
+            weird => Err(ElementParseError::UnknownElementName(weird.to_string()))?,
         };
         Ok(element)
     }

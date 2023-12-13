@@ -246,7 +246,8 @@ pub fn configure() -> Result<Config, Box<dyn std::error::Error>> {
             config.elements = elements
                 .iter()
                 .map(|elem| Element::from_str(elem))
-                .collect::<Result<_, _>>()?
+                .collect::<Result<_, _>>()
+                .map_err(|err| format!("problem encountered while parsing elements: {err}"))?
         }
         if let Some(font_path) = args.font_path {
             config.font_path = font_path.into_boxed_path()
