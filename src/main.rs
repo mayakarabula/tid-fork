@@ -6,6 +6,7 @@ mod state;
 
 use battery::Manager;
 use config::configure;
+use pixels::wgpu::BlendState;
 use state::State;
 
 use pixels::{PixelsBuilder, SurfaceTexture};
@@ -138,6 +139,7 @@ fn main() -> Result<(), pixels::Error> {
                 let [r, g, b, a] = config.background.map(|v| v as f64 / 255.0);
                 pixels::wgpu::Color { r, g, b, a }
             })
+            .blend_state(BlendState::REPLACE) // TODO: Investigate rendering weirdness.
             .build()?
     };
 
