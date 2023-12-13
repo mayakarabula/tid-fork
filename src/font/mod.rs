@@ -58,22 +58,23 @@ pub trait Font {
     fn glyph(&self, ch: char) -> Option<GenericGlyph>;
 }
 
-pub fn load_font(path: &Path) -> WrappedFont {
-    match path.extension().and_then(|s| s.to_str()) {
+pub fn load_font(path: &Path) -> Result<WrappedFont, std::io::Error> {
+    let font = match path.extension().and_then(|s| s.to_str()) {
         Some("uf2") => {
-            let mut file = std::fs::File::open(path).unwrap();
+            let mut file = std::fs::File::open(path)?;
             let mut buf = [0; uf2::FILE_SIZE];
-            file.read_exact(&mut buf).unwrap();
+            file.read_exact(&mut buf)?;
             WrappedFont::Uf2(Box::new(uf2::Font::from_uf2(&buf)))
         }
         Some(_) | None => {
             // Try whether it's psf2.
-            let mut file = std::fs::File::open(path).unwrap();
+            let mut file = std::fs::File::open(path)?;
             let mut buf = Vec::new();
-            file.read_to_end(&mut buf).unwrap();
-            WrappedFont::Psf2(psf2::Font::new(buf).unwrap())
+            file.read_to_end(&mut buf)?;
+            WrappedFont::Psf2(psf2::Font::new(buf).map_err(|err| std::io::Error::other(err))?)
         }
-    }
+    };
+    Ok(font)
 }
 
 #[derive(Clone)]

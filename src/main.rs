@@ -86,7 +86,14 @@ fn main() -> Result<(), pixels::Error> {
         }
     };
 
-    let font = font::load_font(&config.font_path);
+    let font_path = config.font_path;
+    let font = match font::load_font(&font_path) {
+        Ok(font) => font,
+        Err(err) => {
+            eprintln!("ERROR: Failed to load font from {font_path:?}: {err}");
+            std::process::exit(1);
+        },
+    };
     let mut state = State::new(
         font,
         System::new(),
