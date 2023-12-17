@@ -67,7 +67,17 @@ impl<'g> Iterator for Glyph<'g> {
             Glyph::Uf2(rows) => rows.next().map(|r| r.into()),
         }
     }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let size = match self {
+            Glyph::Psf2(rows, _width) => rows.len(),
+            Glyph::Uf2(rows) => rows.len(),
+        };
+        (size, Some(size))
+    }
 }
+
+impl ExactSizeIterator for Glyph<'_> {}
 
 impl Glyph<'_> {
     pub fn width(&self) -> usize {
@@ -104,4 +114,14 @@ impl Iterator for Row<'_> {
             Row::Uf2(row) => row.next(),
         }
     }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let size = match self {
+            Row::Psf2(row) => row.len(),
+            Row::Uf2(row) => row.len(),
+        };
+        (size, Some(size))
+    }
 }
+
+impl ExactSizeIterator for Row<'_> {}
