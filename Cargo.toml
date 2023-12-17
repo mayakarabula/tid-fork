@@ -1,6 +1,6 @@
 [package]
 name = "tid"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Marieke Westendorp <ma3ke.cyber@gmail.com>"]
 repository = "https://git.sr.ht/~ma3ke/tid"
 edition = "2021"
