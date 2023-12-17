@@ -2,16 +2,17 @@
 
 ![screenshot of tid in action](example.png)
 
-This little program is _slightly_ under construction. 
-It is intended for my personal use, but by now it is polished enough that it may be useful to others as well.
-Further improvements will come, especially based on problems from users beyond myself.
+This little program is in a pretty good state, right now.
+It is intended for my personal use, and it is polished enough that it is useful to others as well.
 I am enjoying it a lot and it fits my needs.
 
 (See also, accompanying [labbook entry](https://dwangschematiek.nl/labbook/tid/).)
 
+The uf2 font parsing depends on [`fleck`](https://git.sr.ht/~ma3ke/fleck), which is based on the original uf2 parsing code from this project.
+
 ## installation
 
-### From source
+### from source
 
 ```
 git clone https://git.sr.ht/~ma3ke/tid
