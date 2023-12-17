@@ -152,7 +152,7 @@ fn main() -> Result<(), pixels::Error> {
         let surface_texture = SurfaceTexture::new(window_size.width, window_size.height, &window);
         PixelsBuilder::new(width, height, surface_texture)
             .clear_color({
-                let [r, g, b, a] = config.background.map(|v| v as f64 / 255.0);
+                let [r, g, b, a] = config.background.map(|v| v as f64 / u8::MAX as f64);
                 pixels::wgpu::Color { r, g, b, a }
             })
             .blend_state(BlendState::REPLACE) // TODO: Investigate rendering weirdness.
