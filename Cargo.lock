@@ -491,9 +491,9 @@ dependencies = [
 
 [[package]]
 name = "fleck"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6d86b77f70211b5dbc2e318c65c63b48fd384bf575e74c2f64202a16562c332f"
+checksum = "cc61658582ff9a6504d845ec46539a737a3474be2b7d49eef95b584ebfa60b91"
 
 [[package]]
 name = "foreign-types"
