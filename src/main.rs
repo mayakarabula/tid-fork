@@ -1,4 +1,4 @@
-#![feature(array_chunks, iter_array_chunks, slice_flatten, iter_intersperse)]
+#![feature(array_chunks, slice_flatten)]
 
 mod config;
 mod font;
