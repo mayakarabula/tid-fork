@@ -55,14 +55,15 @@ fn setup_window(
         .with_name(WINDOW_NAME, WINDOW_NAME)
         .with_x11_window_type(vec![XWindowType::Dock]);
 
-    let window = builder.build(event_loop).expect("could not build window");
+    #[allow(unused_mut)]
+    let mut window = builder.build(event_loop).expect("could not build window");
     #[cfg(target_os = "macos")]
-    make_window_sticky_on_mac(&window);
+    make_window_sticky_on_mac(&mut window);
     window
 }
 
 #[cfg(target_os = "macos")]
-fn make_window_sticky_on_mac(window: &Window) {
+fn make_window_sticky_on_mac(window: &mut Window) {
     let mac_window = window as &dyn WindowExtMacOS;
     let ns_window_id = mac_window.ns_window();
     // Safety: ns_window_id points to a valid NSWindow Object and is non-null.
