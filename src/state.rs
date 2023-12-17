@@ -7,7 +7,7 @@ use pixels::Pixels;
 use sysinfo::{CpuExt, System, SystemExt};
 
 use crate::config::{Pixel, PIXEL_SIZE};
-use crate::font::{Font, WrappedFont};
+use crate::font::Font;
 
 const BATTERY_FULL_PERCENTAGE: f32 = 98.0;
 
@@ -47,19 +47,19 @@ impl Draw for &str {
         let width: usize = glyphs.clone().map(|g| g.width()).sum();
         let mut pixels = vec![state.background; height * width];
         let mut x0 = 0;
-        for g in glyphs {
-            for (y, row) in g.rows().enumerate() {
-                for (xg, &cell) in row.iter().enumerate() {
+        for gl in glyphs {
+            let glyph_width = gl.width();
+            for (y, row) in gl.enumerate() {
+                for (xg, cell) in row.enumerate() {
                     let x = x0 + xg;
-                    let idx = y * width + x;
-                    pixels[idx] = if cell {
+                    pixels[y * width + x] = if cell {
                         state.foreground
                     } else {
                         state.background
                     };
                 }
             }
-            x0 += g.width();
+            x0 += glyph_width;
         }
 
         Block { height, pixels }
@@ -190,7 +190,7 @@ impl FromStr for Element {
 }
 
 impl Element {
-    fn width_with_font(&self, font: &WrappedFont) -> usize {
+    fn width_with_font(&self, font: &Font) -> usize {
         match self {
             Element::Padding(width) => *width,
             Element::Space => font.determine_width("  "),
@@ -231,7 +231,7 @@ enum Alignment {
 }
 
 pub struct State {
-    pub font: WrappedFont,
+    pub font: Font,
     sys: System,
     battery: Option<Battery>,
     music: Option<mpd::Client>,
@@ -242,7 +242,7 @@ pub struct State {
 
 impl State {
     pub fn new(
-        font: WrappedFont,
+        font: Font,
         sys: System,
         battery: Option<Battery>,
         music: Option<mpd::Client>,

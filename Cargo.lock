@@ -490,6 +490,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "fleck"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6d86b77f70211b5dbc2e318c65c63b48fd384bf575e74c2f64202a16562c332f"
+
+[[package]]
 name = "foreign-types"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1484,6 +1490,7 @@ dependencies = [
  "battery",
  "chrono",
  "cocoa",
+ "fleck",
  "lexopt",
  "mpd",
  "objc",

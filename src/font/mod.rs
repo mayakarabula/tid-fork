@@ -1,108 +1,107 @@
-use std::{io::Read, path::Path, slice::ChunksExact};
+use std::io::Read;
+use std::path::Path;
 
-mod uf2;
-
-#[derive(Debug, Clone)]
-pub struct GenericGlyph {
-    buf: Vec<bool>,
-    width: usize,
-}
-
-impl From<uf2::Glyph<'_>> for GenericGlyph {
-    fn from(value: uf2::Glyph<'_>) -> Self {
-        // TODO: Oh god. This will all go when I completely redo the uf2 stuff and make a crate
-        // for it. In the future, I guess. Onwards, forwards.
-        let mut buf = Vec::new();
-        for row in value.rows() {
-            for &cell in row.iter() {
-                buf.push(cell)
-            }
-        }
-        Self {
-            buf,
-            width: value.width,
-        }
-    }
-}
-
-impl From<psf2::Glyph<'_>> for GenericGlyph {
-    fn from(value: psf2::Glyph<'_>) -> Self {
-        // TODO: This is not that nice either. Investigate what we can do here instead.
-        let height = value.clone().count();
-        let mut buf = Vec::new();
-        for row in value {
-            for cell in row {
-                buf.push(cell)
-            }
-        }
-        let width = buf.len() / height;
-        Self { buf, width }
-    }
-}
-
-type Rows<'c> = ChunksExact<'c, bool>;
-
-impl GenericGlyph {
-    pub fn width(&self) -> usize {
-        self.width
-    }
-
-    pub fn rows(&self) -> Rows {
-        self.buf.chunks_exact(self.width())
-    }
-}
-
-pub trait Font {
-    fn height(&self) -> usize;
-    fn determine_width(&self, s: &str) -> usize;
-    fn glyph(&self, ch: char) -> Option<GenericGlyph>;
-}
-
-pub fn load_font(path: &Path) -> Result<WrappedFont, std::io::Error> {
+pub fn load_font(path: &Path) -> Result<Font, std::io::Error> {
     let font = match path.extension().and_then(|s| s.to_str()) {
         Some("uf2") => {
             let mut file = std::fs::File::open(path)?;
-            let mut buf = [0; uf2::FILE_SIZE];
+            let mut buf = [0; fleck::FILE_SIZE];
             file.read_exact(&mut buf)?;
-            WrappedFont::Uf2(Box::new(uf2::Font::from_uf2(&buf)))
+            Font::Uf2(Box::new(fleck::Font::new(&buf)))
         }
         Some(_) | None => {
             // Try whether it's psf2.
             let mut file = std::fs::File::open(path)?;
             let mut buf = Vec::new();
             file.read_to_end(&mut buf)?;
-            WrappedFont::Psf2(psf2::Font::new(buf).map_err(|err| std::io::Error::other(err))?)
+            Font::Psf2(psf2::Font::new(buf).map_err(std::io::Error::other)?)
         }
     };
     Ok(font)
 }
 
 #[derive(Clone)]
-pub enum WrappedFont {
+pub enum Font {
     Psf2(psf2::Font<Vec<u8>>),
-    Uf2(Box<uf2::Font>),
+    Uf2(Box<fleck::Font>),
 }
 
-impl Font for WrappedFont {
-    fn height(&self) -> usize {
+impl Font {
+    pub fn height(&self) -> usize {
         match self {
-            WrappedFont::Psf2(font) => font.height() as usize,
-            WrappedFont::Uf2(font) => font.height(),
+            Font::Psf2(font) => font.height() as usize,
+            Font::Uf2(font) => font.height(),
         }
     }
 
-    fn determine_width(&self, s: &str) -> usize {
+    pub fn determine_width(&self, s: &str) -> usize {
         match self {
             // psf2 fonts are fixed-width, so the width determination is trivial.
-            WrappedFont::Psf2(font) => s.len() * font.width() as usize,
-            WrappedFont::Uf2(font) => font.determine_width(s),
+            Font::Psf2(font) => s.len() * font.width() as usize,
+            Font::Uf2(font) => font.determine_width(s),
         }
     }
 
-    fn glyph(&self, ch: char) -> Option<GenericGlyph> {
+    pub fn glyph(&self, ch: char) -> Option<Glyph> {
         match self {
-            WrappedFont::Psf2(font) => font.get_unicode(ch).map(|g| g.into()),
-            WrappedFont::Uf2(font) => font.glyph(ch).map(|g| g.into()),
+            Font::Psf2(font) => font
+                .get_unicode(ch)
+                .map(|glyph| Glyph::Psf2(glyph, font.width())),
+            Font::Uf2(font) => font.glyph(ch).map(Glyph::Uf2),
+        }
+    }
+}
+
+#[derive(Clone)]
+pub enum Glyph<'g> {
+    Psf2(psf2::Glyph<'g>, u32),
+    Uf2(fleck::Glyph<'g>),
+}
+
+impl<'g> Iterator for Glyph<'g> {
+    type Item = Row<'g>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self {
+            Glyph::Psf2(rows, _width) => rows.next().map(|r| r.into()),
+            Glyph::Uf2(rows) => rows.next().map(|r| r.into()),
+        }
+    }
+}
+
+impl Glyph<'_> {
+    pub fn width(&self) -> usize {
+        match self {
+            Glyph::Psf2(_gl, width) => *width as usize,
+            Glyph::Uf2(gl) => gl.width as usize,
+        }
+    }
+}
+
+pub enum Row<'g> {
+    Psf2(psf2::GlyphRow<'g>),
+    Uf2(fleck::Row),
+}
+
+impl<'g> From<psf2::GlyphRow<'g>> for Row<'g> {
+    fn from(row: psf2::GlyphRow<'g>) -> Self {
+        Self::Psf2(row)
+    }
+}
+
+impl From<fleck::Row> for Row<'_> {
+    fn from(row: fleck::Row) -> Self {
+        Self::Uf2(row)
+    }
+}
+
+impl Iterator for Row<'_> {
+    type Item = bool;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self {
+            Row::Psf2(row) => row.next(),
+            Row::Uf2(row) => row.next(),
         }
     }
 }
