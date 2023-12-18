@@ -47,7 +47,7 @@ fn determine_scale_factor(event_loop: &EventLoop<()>) -> u32 {
         .ok()
         .and_then(|v| v.parse::<f64>().ok().map(|f| u32::max(1, f.round() as u32)));
     let wm_scale_factor = || {
-        let Ok(dummy) = Window::new(&event_loop) else {
+        let Ok(dummy) = Window::new(event_loop) else {
             eprintln!(
                 "INFO:  Could not construct dummy window to measure scale factor, \
                     assuming a factor of {DEFAULT_SCALE_FACTOR}"
@@ -185,7 +185,7 @@ fn main() -> Result<(), pixels::Error> {
                 // Try to render.
                 if let Err(err) = pixels.render() {
                     eprintln!("ERROR: {err}");
-                    *control_flow = ControlFlow::Exit;
+                    control_flow.set_exit();
                     return;
                 }
             }
@@ -196,7 +196,7 @@ fn main() -> Result<(), pixels::Error> {
             // Close events.
             if input.close_requested() {
                 eprintln!("INFO:  Close requested. Bye :)");
-                *control_flow = ControlFlow::Exit;
+                control_flow.set_exit();
                 return;
             }
 
